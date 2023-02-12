@@ -168,7 +168,7 @@ class Configuration:
                         self.ncon = len(self.I)
 
         #========== Experimental data read-in ==================
-        def ReadExpdata(self, numlabel):
+        def ReadExpdata(self, numlabel, verbose):
                 folder = './Data'
                 prefix = folder+'/particle_positions.txt'
                 try:
@@ -207,7 +207,7 @@ class Configuration:
                                 for j in tups:
                                     if (tups[i] != j and tups[i][0] == j[1] and tups[i][1] == j[0]):
                                         dups_bool[i] = True   
-                            con_frame['conbool'] = dups_bool
+                            con_frame['conbool'] = np.array(dups_bool)
                             
                             self.I=[]
                             self.J=[]
@@ -215,44 +215,47 @@ class Configuration:
                             ft0=[]
                             fm0=[]
                             
-                            for k in range(102):
-                                if con_frame['conbool'][k] == 'False':
+                            for k in range(len(dups_bool)):
+                                try:
+                                    if con_frame['conbool'][k] == 'False':
+                                            self.I.append(con_frame['id1'][k])
+                                            self.J.append(con_frame['id2'][k])
+                                            fn0.append(con_frame['fn'][k])
+                                            ft0.append(con_frame['ft'][k])
+                                            if (abs(con_frame['ft'][k])/con_frame['fn'][k]>self.mu):
+                                                fm0.append(1)
+                                            else:
+                                                fm0.append(0)
+                                    else:
                                         self.I.append(con_frame['id1'][k])
                                         self.J.append(con_frame['id2'][k])
-                                        fn0.append(con_frame['fn'][k])
-                                        ft0.append(con_frame['ft'][k])
-                                        if (abs(con_frame['ft'][k])/con_frame['fn'][k]>self.mu):
+                                        
+                                        # Search other force and take the mean
+                                        norm2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['fn'].iloc[0]
+                                        tan2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['ft'].iloc[0]
+                                        norm = (con_frame['fn'][k] + norm2)/2
+                                        tan = (con_frame['fn'][k] + tan2)/2
+                                        
+                                        fn0.append(norm)
+                                        ft0.append(tan)
+                                        if (abs(tan)/norm>self.mu):
                                             fm0.append(1)
                                         else:
                                             fm0.append(0)
-                                else:
-                                    self.I.append(con_frame['id1'][k])
-                                    self.J.append(con_frame['id2'][k])
+                                            
+                                        #Now delete corresponding entry to remove duplicates. 
+                                        #Check: len(self.I) = (#True in dups_bool)/2 + (#False in dups_bool)
+                                        con_frame.drop(con_frame[(con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])].index, inplace=True)
+                                except:
+                                    if verbose:
+                                        print('dropped duplicate')
                                     
-                                    #compute mean
-                                    norm2 = con_frame[con_frame['id1']==con_frame['id2'][k]]
-                                    norm2 = norm2[con_frame['id2']==con_frame['id1'][k]]['fn']
-                                    norm2 = norm2.iloc[0]
-                                    tan2 = con_frame[con_frame['id1']==con_frame['id2'][k]]
-                                    tan2 = tan2[con_frame['id2']==con_frame['id1'][k]]['ft']
-                                    tan2 = tan2.iloc[0]
-                                    
-                                    norm = (con_frame['fn'][k] + norm2)/2
-                                    tan = (con_frame['fn'][k] + tan2)/2
-                                    
-                                    fn0.append(norm)
-                                    ft0.append(tan)
-                                    if (abs(tan)/norm>self.mu):
-                                        fm0.append(1)
-                                    else:
-                                        fm0.append(0)
                                     
         
                             self.ncon=len(fm0)
                             self.fnor=np.array(fn0)
                             self.ftan=np.array(ft0)
                             self.fullmobi=np.array(fm0)
-                            print(self.ncon)
           
 
         # same kind of procedure, but get only the next positions and don't redefine things

@@ -48,7 +48,7 @@ for experiment in experiment_nums:
                         numlabel = "%05d" %numlabel0
                         print(numlabel)
                         #def ReadExpdata(self,numlabel,scale=False):
-                        ThisConf.ReadExpdata(numlabel)
+                        ThisConf.ReadExpdata(numlabel, verbose=False)
                         #ThisConf.AddBoundaryContacts()
                         # also read in the next data at this point: dlabel further along in the numbering 
                         # Revise at a later stage.
@@ -83,7 +83,10 @@ for experiment in experiment_nums:
                         #fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
                         #def plotPebbles(self,plotCir,plotPeb,plotPebCon,plotClus,plotOver,**kwargs):
                         #ThisAnalysis.plotPebbles(True,True,True,False,False)
+                        
+                        #Plot pebbles has the following arguments: plotCir,plotPeb,plotPebCon,plotClus,plotOver
                         fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
+                        #fig2 = ThisAnalysis.plotPebbles(True,True,True,True,False)
                         
                         
                         ######### continuing with the Hessian now 
