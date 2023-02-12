@@ -1,3 +1,10 @@
 # RigidLibrary
-This is my version of the Silke Henkes RigidLibrary adjusted for the annulus
-### Note that this is a work in progess
+This is my version of the Silke Henkes RigidLibrary adjusted for the annulus, note that this is a work in progess.
+### TODO Priority
+* Boundary conditions
+* Implement multiple frames
+
+### TODO miscellaneous
+* Streamlining the code
+* Shorter random color generations
+* Index shifting in getpos2
