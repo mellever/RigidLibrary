@@ -48,7 +48,7 @@ for experiment in experiment_nums:
                 #Reading in the data
                 ThisConf.ReadExpdata(verbose=False)
                 #Adding boundary contacts
-                #ThisConf.AddBoundaryContacts()
+                ThisConf.AddBoundaryContacts()
                
                 #Setting up and playing the pebble game
                 ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
@@ -65,7 +65,7 @@ for experiment in experiment_nums:
                 
                 ########## Have a look at some analysis functions of the rigid clusters
                 #def __init__(self,conf0,pebbles0,hessian0,verbose=False):
-                ThisAnalysis=AN.Analysis(ThisConf,ThisPebble,ThisHessian,0.01,True)
+                ThisAnalysis=AN.Analysis(ThisConf,ThisPebble,ThisHessian,0.01,False)
                 # stress statistics
                 #zav,nm,pres,fxbal,fybal,torbal,mobin,mohist,sxx,syy,sxy,syx=ThisAnalysis.getStressStat()
                 # cluster statistics

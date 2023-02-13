@@ -171,10 +171,9 @@ class Configuration:
                 try:
                     pos_data = pandas.read_csv(prefix, names=['id', 'x', 'y', 'r', 'n'])
                     pos_data = pos_data[pos_data['n'] == self.step]
-                    print(pos_data)
-                    self.x = pos_data.loc[:,'x']
-                    self.y = pos_data.loc[:,'y']
-                    self.rad = pos_data.loc[:,'r']
+                    self.x = pos_data.loc[:,'x'].to_numpy()
+                    self.y = pos_data.loc[:,'y'].to_numpy()
+                    self.rad = pos_data.loc[:,'r'].to_numpy()
                     self.N = len(self.rad)
                     self.Lx = np.amax(self.x)-np.amin(self.x)
                     self.Ly = np.amax(self.y)-np.amin(self.y)
@@ -250,13 +249,26 @@ class Configuration:
                             print('dropped duplicate')
                         
                         
-                #End product
+                #Final arrays
                 self.ncon=len(fm0)
                 self.fnor=np.array(fn0)
                 self.ftan=np.array(ft0)
                 self.fullmobi=np.array(fm0)
-                print(len(self.I))
-                print("Config frame #" +str(self.step)+ " created")
+                
+                self.nx=np.zeros(self.ncon)
+                self.ny=np.zeros(self.ncon)
+                for k in range(self.ncon):
+                        x1=self.x[self.I[k]]
+                        y1=self.y[self.I[k]]
+                        x2=self.x[self.J[k]]
+                        y2=self.y[self.J[k]]
+                        rij=np.sqrt((x1-x2)**2+(y1-y2)**2)
+                        self.nx[k]=(x2-x1)/rij
+                        self.ny[k]=(y2-y1)/rij
+                
+                print("Config frame #" +str(self.step)+ " created")      
+                return 0
+                
           
 
         # same kind of procedure, but get only the next positions and don't redefine things

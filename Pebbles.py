@@ -45,7 +45,6 @@ class Pebbles:
         else:
             print ("Modified pebble games (2nd neighbours, or single contacts, or deleted contacts). Not implemented yet, please construct new functions similar to AddFrictionalBonds(conf) to modify contact lists.")
         
-        print(conf.I)
         # Reverse connection object: necessary for marking both rigid clusters and overconstrained regions
         self.conmat=[[] for _ in range(self.N)]
         for k in range(self.ncon2):
