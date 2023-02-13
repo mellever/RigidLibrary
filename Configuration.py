@@ -18,7 +18,7 @@ class Configuration:
 
         #=================== Create a new configruation ===============
         # Current choices: either simulation or experimental through datatype. Parameters are either read (simulation) or passed to the configuration via optional arguments (experiment)
-        def __init__(self, folder, datatype, mu0=0.2, prefix10='DSC', prefix20='_solved_Tracke_'):
+        def __init__(self, folder, datatype, mu0, strainstep):
             self.folder = folder
             self.datatype = datatype
             self.addBoundary = False
@@ -37,9 +37,7 @@ class Configuration:
                 self.height = 1.0
                 self.width = 1.0
             elif (datatype == 'experiment'):
-                print("Reading experimental data!")
-                self.prefix1 = prefix10
-                self.prefix2 = prefix20
+                self.step = strainstep
                 self.mu = mu0
                 # Experimental data does not have periodic boundary conditions and there is no angle data either
                 self.periodic = False
@@ -168,11 +166,12 @@ class Configuration:
                         self.ncon = len(self.I)
 
         #========== Experimental data read-in ==================
-        def ReadExpdata(self, numlabel, verbose):
-                folder = './Data'
-                prefix = folder+'/particle_positions.txt'
+        def ReadExpdata(self, verbose):
+                prefix = self.folder +'/particle_positions.txt'
                 try:
                     pos_data = pandas.read_csv(prefix, names=['id', 'x', 'y', 'r', 'n'])
+                    pos_data = pos_data[pos_data['n'] == self.step]
+                    print(pos_data)
                     self.x = pos_data.loc[:,'x']
                     self.y = pos_data.loc[:,'y']
                     self.rad = pos_data.loc[:,'r']
@@ -187,75 +186,77 @@ class Configuration:
                     print("Error: there is no position data here")
                     return 1
 
-                prefix = './Data/Adjacency_list.txt'
+                prefix = self.folder +'/Adjacency_list.txt'
                 try:
                     con_data = pandas.read_csv(prefix, names=['n', 'id1', 'id2', 'ft', 'fn'])
+                    con_data= con_data[con_data['n'] == self.step]
                 except:
                     print("Error: there is no contact data here")
                     return 1
-
-                nframe = 1
-                for nf in range(nframe):
-                            print('frame #' + str(nf+1))
-                            pos_frame = pos_data[pos_data['n'] == nf+1]
-                            con_frame = con_data[con_data['n'] == nf+1]
+                
+                #Create a list of entries that contain a duplicate
+                tups = list(zip(con_data.id1, con_data.id2))
+                dups_bool = [None]*len(tups)                       
+                for i in range(len(tups)):
+                    for j in tups:
+                        if (tups[i] != j and tups[i][0] == j[1] and tups[i][1] == j[0]):
+                            dups_bool[i] = True   
+                
+                #Add dups_bool array to the last column of the data frame
+                con_data['conbool'] = dups_bool
+                con_frame = con_data #This step is to supress copy warning, since adding column creates a copy. 
+                
+                #Create lists
+                self.I=[]
+                self.J=[]
+                fn0=[]
+                ft0=[]
+                fm0=[]
+                
+                #Filter entries and determine if slipping or not
+                for k in range(len(dups_bool)):
+                    try:
+                        if con_frame['conbool'][k] == 'False':
+                                self.I.append(con_frame['id1'][k])
+                                self.J.append(con_frame['id2'][k])
+                                fn0.append(con_frame['fn'][k])
+                                ft0.append(con_frame['ft'][k])
+                                if (abs(con_frame['ft'][k])/con_frame['fn'][k]>self.mu):
+                                    fm0.append(1)
+                                else:
+                                    fm0.append(0)
+                        else:
+                            self.I.append(con_frame['id1'][k])
+                            self.J.append(con_frame['id2'][k])
                             
-                            #Create a list of entries that contain a duplicate
-                            tups = list(zip(con_frame.id1, con_frame.id2))
-                            dups_bool = [None]*len(tups)                          
-                            for i in range(len(tups)):
-                                for j in tups:
-                                    if (tups[i] != j and tups[i][0] == j[1] and tups[i][1] == j[0]):
-                                        dups_bool[i] = True   
-                            con_frame['conbool'] = np.array(dups_bool)
+                            # Search other force and take the mean
+                            norm2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['fn'].iloc[0]
+                            tan2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['ft'].iloc[0]
+                            norm = (con_frame['fn'][k] + norm2)/2
+                            tan = (con_frame['fn'][k] + tan2)/2
                             
-                            self.I=[]
-                            self.J=[]
-                            fn0=[]
-                            ft0=[]
-                            fm0=[]
-                            
-                            for k in range(len(dups_bool)):
-                                try:
-                                    if con_frame['conbool'][k] == 'False':
-                                            self.I.append(con_frame['id1'][k])
-                                            self.J.append(con_frame['id2'][k])
-                                            fn0.append(con_frame['fn'][k])
-                                            ft0.append(con_frame['ft'][k])
-                                            if (abs(con_frame['ft'][k])/con_frame['fn'][k]>self.mu):
-                                                fm0.append(1)
-                                            else:
-                                                fm0.append(0)
-                                    else:
-                                        self.I.append(con_frame['id1'][k])
-                                        self.J.append(con_frame['id2'][k])
-                                        
-                                        # Search other force and take the mean
-                                        norm2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['fn'].iloc[0]
-                                        tan2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['ft'].iloc[0]
-                                        norm = (con_frame['fn'][k] + norm2)/2
-                                        tan = (con_frame['fn'][k] + tan2)/2
-                                        
-                                        fn0.append(norm)
-                                        ft0.append(tan)
-                                        if (abs(tan)/norm>self.mu):
-                                            fm0.append(1)
-                                        else:
-                                            fm0.append(0)
-                                            
-                                        #Now delete corresponding entry to remove duplicates. 
-                                        #Check: len(self.I) = (#True in dups_bool)/2 + (#False in dups_bool)
-                                        con_frame.drop(con_frame[(con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])].index, inplace=True)
-                                except:
-                                    if verbose:
-                                        print('dropped duplicate')
-                                    
-                                    
-        
-                            self.ncon=len(fm0)
-                            self.fnor=np.array(fn0)
-                            self.ftan=np.array(ft0)
-                            self.fullmobi=np.array(fm0)
+                            fn0.append(norm)
+                            ft0.append(tan)
+                            if (abs(tan)/norm>self.mu):
+                                fm0.append(1)
+                            else:
+                                fm0.append(0)
+                                
+                            #Now delete corresponding entry to remove duplicates. 
+                            #Check: len(self.I) = (#True in dups_bool)/2 + (#False in dups_bool)
+                            con_frame.drop(con_frame[(con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])].index, inplace=True)
+                    except:
+                        if verbose:
+                            print('dropped duplicate')
+                        
+                        
+                #End product
+                self.ncon=len(fm0)
+                self.fnor=np.array(fn0)
+                self.ftan=np.array(ft0)
+                self.fullmobi=np.array(fm0)
+                print(len(self.I))
+                print("Config frame #" +str(self.step)+ " created")
           
 
         # same kind of procedure, but get only the next positions and don't redefine things
