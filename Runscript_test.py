@@ -1,11 +1,6 @@
 import random
 import sys, os, glob
 
-
-# Location of the library files: insert into python path
-pebblepath='/home/sh18581/Documents/Friction/RigidLibrary/'
-sys.path.insert(1,pebblepath)
-
 # Load pebble game and dynamical matrix libraries
 import Configuration as CF
 import Pebbles as PB
@@ -16,17 +11,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 #topdir='/directory/where/experimental/data/is/located/'
-topdir='./Data/'
+topdir='/home/melle/Documents/Code/RigidLibrary/Data/'
 
 # experimental friction coefficient
 mu=0.3
 
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
 experiment_nums=['1', '2']
-
-
-
-
 
 # Loop over experiment
 for experiment in experiment_nums:
@@ -42,6 +33,8 @@ for experiment in experiment_nums:
         
         # Loop over strain steps for a given experiment
         # Start at 1 since steps start at 1. Ends at nsteps.
+        # For now we take nsteps=1 because of error in the data
+        nsteps = 1
         for u in range(1, nsteps+1):
                 #Creating configuration
                 ThisConf = CF.Configuration(topdir+experiment,'experiment',mu, u)
@@ -78,7 +71,6 @@ for experiment in experiment_nums:
                 #Plot pebbles has the following arguments: plotCir,plotPeb,plotPebCon,plotClus,plotOver
                 fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
                 #fig2 = ThisAnalysis.plotPebbles(True,True,True,True,False)
-                
                 
                 ######### continuing with the Hessian now 
                 # constructing the matrix

@@ -12,6 +12,10 @@ import os
 import glob
 import numpy as np
 import pandas
+import math 
+from scipy.spatial import ConvexHull
+from scipy.spatial.distance import cdist
+
 
 
 class Configuration:
@@ -251,6 +255,8 @@ class Configuration:
                         
                 #Final arrays
                 self.ncon=len(fm0)
+                self.I = np.array(self.I)
+                self.J = np.array(self.J)
                 self.fnor=np.array(fn0)
                 self.ftan=np.array(ft0)
                 self.fullmobi=np.array(fm0)
@@ -300,91 +306,97 @@ class Configuration:
                     self.dy=self.ynext-self.y
          
         #### ======================== Boundary integration =======================================================
-        def AddBoundaryContacts(self,threshold=20,Brad=20.0):
+        def AddBoundaryContacts(self,threshold=20,Brad=30.0):
             self.addBoundary=True
-            # Threshold to check if a particle is close enough to walls.
-            upidx=np.argmax(self.y)
-            downidx=np.argmin(self.y)
-            leftidx=np.argmin(self.x)
-            rightidx=np.argmax(self.x)
+
+            # Amount of contacts before adding boundaries
+            self.ncon3 = self.N
             
-            # Boundary posiitons:
-            # coordinates of virtual boundary particles: in the middle, one Brad off from the edge of the outermost particle
-            up=self.y[upidx]
-            yup = up+self.rad[upidx]
-            down=self.y[downidx]
-            ydown = down-self.rad[downidx]
-            left=self.x[leftidx]
-            xleft=left-self.rad[leftidx]
-            right=self.x[rightidx]
-            xright=right+self.rad[rightidx]
+            # Fist we need to determine the radius of the outer ring
+            # This is done by finding the maximum distance between points
+            points = np.vstack((self.x, self.y)).T
+            # Compute convex hull
+            hull = ConvexHull(points)
+            # Boundary of convex hull
+            hullpoints = points[hull.vertices,:]
+            dmax = cdist(hullpoints, hullpoints, metric='euclidean')
             
-            # coordinates of virtual boundary particles: in the middle, one Brad off from the edge of the outermost particle
-            Boundaries=np.zeros((4,3)) # Four boundary particles with their x,y and rad
-            Boundaries[0,:]=[(left+right)*0.5,yup+Brad,Brad]
-            Boundaries[1,:]=[(left+right)*0.5,ydown-Brad,Brad]
-            Boundaries[2,:]=[xleft-Brad,(up+down)*0.5,Brad]
-            Boundaries[3,:]=[xright+Brad,(up+down)*0.5,Brad]
+            # Get the farthest apart points
+            dmax_idx = np.unravel_index(dmax.argmax(), dmax.shape)
+            #Get coordinates maximal points
+            max_points = [[hullpoints[dmax_idx[0]][0], hullpoints[dmax_idx[0]][1]],[hullpoints[dmax_idx[1]][0], hullpoints[dmax_idx[1]][1]]]
+
+            #Get indidices of maximal points
+            idx1 = np.where(self.x == max_points[0][0])[0]
+            idx1 = idx1[np.where(self.y[idx1] == max_points[0][1])[0][0]]
+            idx2 = np.where(self.x == max_points[1][0])[0]
+            idx2 = idx2[np.where(self.y[idx2] == max_points[1][1])[0][0]]
+            
+            #Use the above indices to find radi of particles
+            R1_outer = self.rad[idx1]
+            R2_outer = self.rad[idx2]
+
+            # Compute distance between these points and add radi
+            D_outer = math.dist(max_points[0], max_points[1]) + R1_outer + R2_outer
+            
+            #Compute radius for outer boundary particles:
+            R_outer = D_outer/2 + Brad/2 #Check this!!
+
+            #Determine midpoint of the circle
+            xm = (max_points[0][0]+ max_points[1][0])/2
+            ym = (max_points[0][1]+ max_points[1][1])/2
+            
+            #Boundary particles onto outer boundary
+            num_outer = 200 #Amount of boundary particles on outer radius
+            theta = np.linspace(0, 2*np.pi, num_outer, endpoint=False)
+            outer_b = np.zeros((len(theta), 3))
+            for i in range(len(outer_b)):
+                outer_b[i,:] = [xm + R_outer*np.cos(theta[i]), ym + R_outer*np.sin(theta[i]), Brad]
+
+            Boundaries = outer_b.astype(int) #Approximate boundary coordinates by ints
             
             # Find the particles in contact with the boundary, and label correctly
-            self.bindices=[self.N,self.N+1,self.N+2,self.N+3]
-            padd=[]
-            labels=[]
-            pup =  np.nonzero(np.abs(self.y+self.rad-yup)<threshold)[0]
-            padd.extend(pup)
-            labels.extend([0 for k in range(len(pup))])
-            pdown =  np.nonzero(np.abs(self.y-self.rad-ydown)<threshold)[0]
-            padd.extend(pdown)
-            labels.extend([1 for k in range(len(pdown))])
-            pleft = np.nonzero(np.abs(self.x-self.rad-xleft)<threshold)[0]
-            padd.extend(pleft)
-            labels.extend([2 for k in range(len(pleft))])
-            pright = np.nonzero(np.abs(self.x+self.rad-xright)<threshold)[0]
-            padd.extend(pright)
-            labels.extend([3 for k in range(len(pright))])
-            
+            self.bindices=np.zeros(len(theta)).astype(int)
+            for i in range(len(self.bindices)):
+                self.bindices[i] = self.N+i
+
             fullmobi_add=[]
             fnor_add=[]
             ftan_add=[]
             nx_add=[]
             ny_add=[]
-            for k in range(len(padd)):
-                # does this guy have neighbours?
-                neii=np.nonzero(self.I[:self.ncon]==padd[k])[0]
-                neij=np.nonzero(self.J[:self.ncon]==padd[k])[0]
-                # if yes add the boundary contacts
-                if (len(neii)>0 or len(neij)>0):
-                    self.I.append(self.bindices[labels[k]])
-                    self.J.append(padd[k])
-                    if (labels[k])==0:
-                        nx0=0
-                        ny0=-1
-                    elif (labels[k]==1):
-                        nx0=0
-                        ny0=1
-                    elif (labels[k]==2):
-                        nx0=1
-                        ny0=0
-                    else:
-                        nx0=-1
-                        ny0=0
-                    # compute force on this contact by force balance
-                    # two minus signs on second part cancel out
-                    ftotx=np.sum(self.fnor[neii]*self.nx[neii]-self.ftan[neii]*self.ny[neii])-np.sum(self.fnor[neij]*self.nx[neij]-self.ftan[neij]*self.ny[neij])
-                    ftoty=np.sum(self.fnor[neii]*self.ny[neii]+self.ftan[neii]*self.nx[neii])-np.sum(self.fnor[neij]*self.ny[neij]+self.ftan[neij]*self.nx[neij])
-                    # (fx*nx+fy*ny)
-                    fnor0=ftotx*nx0+ftoty*ny0
-                    # (fx*(-ny)+fy*nx)
-                    ftan0=ftotx*(-ny0)+ftoty*nx0
-                    #print (ftan0)
-                    if (abs(ftan0)/fnor0>self.mu):
-                        fullmobi_add.append(1)
-                    else:
-                        fullmobi_add.append(0)
-                    fnor_add.append(fnor0)
-                    ftan_add.append(ftan0)
-                    nx_add.append(nx0)
-                    ny_add.append(ny0)
+
+            for i in range(len(Boundaries)):
+                for j in range(self.N):
+                    d = np.sqrt((self.x[j]-Boundaries[i][0])**2 + (self.y[j]-Boundaries[i][1])**2) - self.rad[j] - Brad
+                    if d <= threshold:
+                        self.I = np.append(self.I, self.N + i) ##check this
+                        self.J = np.append(self.J, j)
+                        
+                        neii=np.nonzero(self.I[:self.ncon]==j)[0]
+                        neij=np.nonzero(self.J[:self.ncon]==j)[0]
+
+                        # This needs to change!!!
+                        nx0 = ny0 = 1
+
+                        # compute force on this contact by force balance
+                        # two minus signs on second part cancel out
+                        ftotx=np.sum(self.fnor[neii]*self.nx[neii]-self.ftan[neii]*self.ny[neii])-np.sum(self.fnor[neij]*self.nx[neij]-self.ftan[neij]*self.ny[neij])
+                        ftoty=np.sum(self.fnor[neii]*self.ny[neii]+self.ftan[neii]*self.nx[neii])-np.sum(self.fnor[neij]*self.ny[neij]+self.ftan[neij]*self.nx[neij])
+                        # (fx*nx+fy*ny)
+                        fnor0=ftotx*nx0+ftoty*ny0
+                        # (fx*(-ny)+fy*nx)
+                        ftan0=ftotx*(-ny0)+ftoty*nx0
+                        #print (ftan0)
+                        if (abs(ftan0)/fnor0>self.mu):
+                            fullmobi_add.append(1)
+                        else:
+                            fullmobi_add.append(0)
+                        fnor_add.append(fnor0)
+                        ftan_add.append(ftan0)
+                        nx_add.append(nx0)
+                        ny_add.append(ny0)
+
             # Finally stick it at the end of the existing data
             self.x=np.concatenate((self.x,Boundaries[:,0]))
             self.y=np.concatenate((self.y,Boundaries[:,1]))
@@ -395,10 +407,11 @@ class Configuration:
             self.nx=np.concatenate((self.nx,np.array(nx_add)))
             self.ny=np.concatenate((self.ny,np.array(ny_add)))
             self.ncon=len(self.I)
-            self.N+=4
-            print ("Added boundaries!")
-                    
-          
+            self.N+= len(theta)
+            #b = 0
+            #print(self.I[b], self.x[self.I[b]], self.y[self.I[b]])
+            #print(self.J[b], self.x[self.J[b]], self.y[self.J[b]])
+            print ("Added boundaries!")      
 
         def AddNextBoundaryContacts(self,threshold=15,Brad=20.0):
             # Threshold to check if a particle is close enough to walls.
@@ -590,10 +603,20 @@ class Configuration:
         
         # same, but based on existing particle labels (in case those come from elsewhere)
         def getConPos2(self,k1,k2):
-            if self.experiment:
+            if self.experiment and k1 <= self.ncon3 and k2 <= self.ncon3:
                 x0=self.x[k1-1]
                 x1=self.x[k2-1]
                 y0=self.y[k1-1]
+                y1=self.y[k2-1]
+            elif self.experiment and k1 > self.ncon3 and k2 <= self.ncon3:
+                x0=self.x[k1-1]
+                x1=self.x[k2]
+                y0=self.y[k1-1]
+                y1=self.y[k2]
+            elif self.experiment and k1 <= self.ncon3 and k2 > self.ncon3:
+                x0=self.x[k1]
+                x1=self.x[k2-1]
+                y0=self.y[k1]
                 y1=self.y[k2-1]
             else:
                 x0=self.x[k1]
