@@ -8,5 +8,5 @@ This is my version of the Silke Henkes RigidLibrary adjusted for the annulus and
 
 ### Miscellaneous features
 - [ ] Streamlining the code
-- [ ] Shorter random color generations &rarr; do after complete data set
+- [ ] Shorter random color generations &rarr; do after complete data is obtained
 - [x] Index shifting in getpos2 and plotting
