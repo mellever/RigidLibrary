@@ -62,8 +62,10 @@ class Analysis:
 		self.Lx=self.conf.Lx
 		self.Ly=self.conf.Ly
 		# this is the distance beween lines in the double contact plots
-		if self.conf.datatype=='experiment':
+		if self.conf.datatype=='experiment_square':
 				self.small=8.0
+		elif self.conf.datatype=='experiment_annulus':
+				self.small=12.0
 		else:
 				self.small=0.3
 	

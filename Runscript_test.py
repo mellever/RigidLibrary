@@ -16,6 +16,11 @@ topdir='/home/melle/Documents/Code/RigidLibrary/Data/'
 # experimental friction coefficient
 mu=0.3
 
+# Experiment type, choose one of three options:
+datatype = 'experiment_annulus'
+#datatype = 'experiment_square'
+#datatype = 'simulation'
+
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
 experiment_nums=['1', '2']
 
@@ -37,11 +42,11 @@ for experiment in experiment_nums:
         nsteps = 1
         for u in range(1, nsteps+1):
                 #Creating configuration
-                ThisConf = CF.Configuration(topdir+experiment,'experiment',mu, u)
+                ThisConf = CF.Configuration(topdir+experiment,datatype ,mu, u)
                 #Reading in the data
-                ThisConf.ReadExpdata(verbose=False)
+                ThisConf.ReadExpdataAnnulus(verbose=False)
                 #Adding boundary contacts
-                ThisConf.AddBoundaryContacts()
+                ThisConf.AddBoundaryContactsAnnulus()
                
                 #Setting up and playing the pebble game
                 ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
