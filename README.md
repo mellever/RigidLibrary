@@ -3,10 +3,10 @@ This is my version of the Silke Henkes RigidLibrary adjusted for the annulus and
 ### Core features
 - [x] Implement new data format
 - [x] Implement multiple frames
-- [ ] Boundary conditions
+- [x] Boundary conditions
 
 
 ### Miscellaneous features
 - [ ] Streamlining the code
 - [ ] Shorter random color generations
-- [ ] Index shifting in getpos2 and plotting
+- [x] Index shifting in getpos2 and plotting
