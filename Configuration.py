@@ -588,7 +588,6 @@ class Configuration:
             self.y=np.concatenate((self.y,Boundaries[:,1]))
             self.rad=np.concatenate((self.rad,Boundaries[:,2]))
             self.fullmobi=np.concatenate((self.fullmobi,np.array(fullmobi_add)))
-            print(self.I, self.J)
             self.ncon=len(self.I)
             self.N+=2
             print ("Added boundaries!")

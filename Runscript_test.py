@@ -9,6 +9,7 @@ import Analysis as AN
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
 
 #topdir='/directory/where/experimental/data/is/located/'
 topdir='/home/melle/Documents/Code/RigidLibrary/Data/'
@@ -75,6 +76,8 @@ for experiment in experiment_nums:
                 
                 #Plot pebbles has the following arguments: plotCir,plotPeb,plotPebCon,plotClus,plotOver
                 fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
+                #For saving the plot as plot.pickle
+                pickle.dump(fig2, open('plot.pickle', 'wb')) # This is for Python 3 - py2 may need `file` instead of `open`
                 #fig2 = ThisAnalysis.plotPebbles(True,True,True,True,False)
                 
                 ######### continuing with the Hessian now 
