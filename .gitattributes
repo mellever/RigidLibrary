@@ -1,1 +1,2 @@
+#Remove .dlm files, which is the square data, from language stats.
 *.dlm linguist-vendored
