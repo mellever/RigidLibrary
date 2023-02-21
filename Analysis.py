@@ -217,33 +217,16 @@ class Analysis:
 			
 		# Plotting clusters, using the external (global!) random_read color pattern
 		if (plotClus):
-			rgbclus=np.empty((self.pebbles.ncon2,3))
-			if self.pebbles.cidx>0:
-				rgbpattern=np.random.rand(self.pebbles.cidx+1,3)
-			else:
-				# no clusters found, allocate dummy matrix for smooth run of doing nothing
-				rgbpattern=np.random.rand(1,3)
-			print(self.pebbles.cidx)
-			rgbpattern[0,:]=np.array([0,0,1])
-			for k in range(self.pebbles.ncon2):
-				if (self.pebbles.cluster[k]>=0):
-					# check for global colormap; else use random pattern
-					try:
-						rgbclus[k,:]=self.random_read[self.pebbles.cluster[k].astype(int),:]
-					except:
-						rgbclus[k,:]=rgbpattern[self.pebbles.cluster[k].astype(int),:]
-						#print(rgbclus[k,:])
-				else:
-					rgbclus[k,:]=np.array([0,0,0])
+			colors = ['#'+''.join(random.sample('0123456789ABCDEF',6)) for i in range(len(self.pebbles.cluster))]
 			for k in range(len(self.pebbles.Ifull)):
 				# this version depends on pebble numbering, so use 2nd version
 				x0,x1,y0,y1=self.conf.getConPos2(self.pebbles.Ifull[k],self.pebbles.Jfull[k])
 				if (self.pebbles.cluster[k]!=-1):
 					if (k>=self.ncon):
 						ang=np.arctan((y1-y0)/(x1-x0))
-						conlink=lne.Line2D([x0-self.small*np.sin(ang),x1-self.small*np.sin(ang)],[y0+self.small*np.cos(ang),y1+self.small*np.cos(ang)],linewidth=3,color=(rgbclus[k,0],rgbclus[k,1],rgbclus[k,2]))
+						conlink=lne.Line2D([x0-self.small*np.sin(ang),x1-self.small*np.sin(ang)],[y0+self.small*np.cos(ang),y1+self.small*np.cos(ang)],linewidth=3,color=colors[self.pebbles.cluster[k].astype(int)])
 					else:
-						conlink=lne.Line2D([x0,x1],[y0,y1],linewidth=3,color=(rgbclus[k,0],rgbclus[k,1],rgbclus[k,2]))
+						conlink=lne.Line2D([x0,x1],[y0,y1],linewidth=3,color=colors[self.pebbles.cluster[k].astype(int)])
 					axval.add_line(conlink)
 				else:
 					if (k>=self.ncon):
@@ -310,7 +293,7 @@ class Analysis:
 		if self.conf.datatype=='simulation':
 			axval.set_xlim(-self.Lx/2,self.Lx/2)
 			axval.set_ylim(-self.Ly/2,self.Ly/2)
-		elif self.conf.datatype=='experiment':
+		elif self.conf.datatype=='experiment_square':
 			xmin=np.amin(self.conf.x)-20
 			ymin=np.amin(self.conf.y)-20
 			axval.set_xlim(xmin,xmin+self.Lx+120)
@@ -483,7 +466,6 @@ class Analysis:
 
 		# Make proper threshold plots
 		for k in range(self.ncon):
-			
 			x0,x1,y0,y1=self.conf.getConPos(k)
 			if mode == 'translations':
 				if (eign[k]+eigt[k])<thresh:

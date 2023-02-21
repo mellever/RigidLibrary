@@ -23,7 +23,9 @@ class Configuration:
         def __init__(self, folder, datatype, mu0, strainstep):
             self.folder = folder
             self.datatype = datatype
-            self.addBoundary = False
+            # These get set to true if add boudary functions are called
+            self.addBoundarySquare = False
+            self.addBoundaryAnnulus = False
             if (datatype == 'simulation'):
                 print("Reading simulation data!")
                 self.getParameters(folder)
@@ -54,6 +56,9 @@ class Configuration:
                 self.height = 3.1e-3
                 # boundary width
                 self.width = 20e-3
+                # Prefixes of the data name
+                self.prefix1='DSC'
+                self.prefix2='_solved_Tracke_'
             elif (datatype == 'experiment_annulus'):
                 #Radius of the inner ring
                 self.R1 = 850
@@ -432,7 +437,7 @@ class Configuration:
          
         #### ======================== Boundary integration =======================================================
         def AddBoundaryContactsSquare(self,threshold=20,Brad=20.0):
-            self.addBoundary=True
+            self.addBoundarySquare=True
             # Threshold to check if a particle is close enough to walls.
             upidx=np.argmax(self.y)
             downidx=np.argmin(self.y)
@@ -558,6 +563,7 @@ class Configuration:
             self.bindices=[self.N,self.N+1]
             padd=[]
             labels=[]
+            
             #Distance of points from the center of the annulus
             r = np.sqrt(np.square(self.x- self.mid_x)+np.square(self.y-self.mid_y))
             p1 =  np.nonzero(np.abs(r - self.R1 - self.rad)<threshold)[0]
@@ -567,6 +573,7 @@ class Configuration:
             padd.extend(p2)
             labels.extend([1 for k in range(len(p2))])
             
+            #Some arrays for the information of the newly introduced contacts
             fullmobi_add=[]
             fnor_add=[]
             ftan_add=[]
@@ -577,17 +584,34 @@ class Configuration:
                 self.J = np.append(self.J, padd[k])
                 #Always add double bound
                 fullmobi_add.append(0)
+                
+                #Compute forces and stuff, this needs to change!
+                fnor0 = ftan0 = nx0 = ny0 = 1
+                
+                #Add data to list
+                fnor_add.append(fnor0)
+                ftan_add.append(ftan0)
+                nx_add.append(nx0)
+                ny_add.append(ny0)
             
             #Add slipping contact between the two boundary particles
             self.I = np.append(self.I, self.bindices[0])
             self.J = np.append(self.J, self.bindices[1])
             fullmobi_add.append(1)
+            fnor_add.append(fnor0)
+            ftan_add.append(ftan0)
+            nx_add.append(nx0)
+            ny_add.append(ny0)
 
             # Finally stick it at the end of the existing data
             self.x=np.concatenate((self.x,Boundaries[:,0]))
             self.y=np.concatenate((self.y,Boundaries[:,1]))
             self.rad=np.concatenate((self.rad,Boundaries[:,2]))
+            self.fnor=np.concatenate((self.fnor,np.array(fnor_add)))
+            self.ftan=np.concatenate((self.ftan,np.array(ftan_add)))
             self.fullmobi=np.concatenate((self.fullmobi,np.array(fullmobi_add)))
+            self.nx=np.concatenate((self.nx,np.array(nx_add)))
+            self.ny=np.concatenate((self.ny,np.array(ny_add)))
             self.ncon=len(self.I)
             self.N+=2
             print ("Added boundaries!")
@@ -772,12 +796,37 @@ class Configuration:
                                 y1=y1-self.Ly*yover
                                 x1-=self.Lx*self.strain*yover
                                 x1=x1-self.Lx*np.round((x1-x0)/self.Lx)
-                if self.addBoundary:
+                if self.addBoundarySquare:
                     ival=self.I[k]
                     if ((ival==self.bindices[0]) or (ival==self.bindices[1])): #top or bottom
                         x0=x1
                     if ((ival==self.bindices[2]) or (ival==self.bindices[3])): #left or right
                         y0=y1
+                if self.addBoundaryAnnulus:
+                    ival=self.I[k]
+                    l = 100 #Length in pixels of the contacts with the boundary
+                    #If in contact with the inner boundary
+                    if (ival==self.bindices[0]):
+                        #Compute position vector from midpoint
+                        r = np.array([x1-self.mid_x, y1-self.mid_y])
+                        #Compute length of r
+                        r_len = np.linalg.norm(r)
+                        #Compute angle between position vector from midpoint and (1,0) vector
+                        ang = np.arctan2(r[1], r[0])
+                        #Compute coordinates of outward inward coordinates
+                        x0 = self.mid_x + (r_len - l)*np.cos(ang)
+                        y0 = self.mid_y + (r_len - l)*np.sin(ang)
+                    #If in contact with the outer boundary 
+                    if (ival==self.bindices[1]):
+                        #Compute position vector from midpoint
+                        r = np.array([x1-self.mid_x, y1-self.mid_y])
+                        #Compute length of r
+                        r_len = np.linalg.norm(r)
+                        #Compute angle between position vector from midpoint and (1,0) vector
+                        ang = np.arctan2(r[1], r[0])
+                        #Compute coordinates of outward pointing coordinates
+                        x0 = self.mid_x + (r_len + l)*np.cos(ang)
+                        y0 = self.mid_y + (r_len + l)*np.sin(ang)
                 return x0,x1,y0,y1
         
         # same, but based on existing particle labels (in case those come from elsewhere)
@@ -793,7 +842,7 @@ class Configuration:
                             y1=y1-self.Ly*yover
                             x1-=self.Lx*self.strain*yover
                             x1=x1-self.Lx*np.round((x1-x0)/self.Lx)
-            if self.addBoundary:
+            if self.addBoundarySquare:
                 if ((k1==self.bindices[0]) or (k1==self.bindices[1])): #top or bottom
                     x0=x1
                 if ((k1==self.bindices[2]) or (k1==self.bindices[3])): #left or right
