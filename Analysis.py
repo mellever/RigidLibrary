@@ -203,9 +203,11 @@ class Analysis:
 					axval.text(self.conf.x[k],self.conf.y[k],str(k),fontsize=8)
 			# The pebbles: one red, two green, three red
 			if (plotPeb):
-				for j in range(3):
+				#Is range(self.pebbles.game1) correct or should it always be range(3)?
+				for j in range(self.pebbles.game1):
+					#print(k,j, self.pebbles.pebbles[k,j])
 					if(self.pebbles.pebbles[k,j]==-1):
-						t=t+1;
+						t+=1;
 						if(t==1):
 							color='r'
 						if(t==2):
@@ -343,7 +345,10 @@ class Analysis:
 			xdiff=np.ediff1d(xval)
 			addl=xval[0]-xval[-1]+self.conf.Lx
 			#xdiff[0]+=self.L
-			gap=max(np.amax(xdiff),addl)
+			try:
+				gap=max(np.amax(xdiff),addl)
+			except ValueError:
+				gap=0
 			if gap>gapmax:
 				lenx=self.Lx-gap
 			else:

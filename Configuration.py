@@ -82,6 +82,25 @@ class Configuration:
                 # boundary width
                 self.width = 20e-3
                 self.experiment = True
+            elif (datatype == 'test'):
+                #Strainstep of the experiment
+                self.step = strainstep
+                #Set friction coefficient
+                self.mu = mu0
+                # Experimental data does not have periodic boundary conditions and there is no angle data either
+                self.periodic = False
+                self.hasAngles = False
+                # density of the material in kg/m^3
+                self.density = 1060.0
+                # Prefactor of the stiffness coefficient, k_n = \frac{\pi}{6} E h = 6490 kg /s^2
+                self.stiffness = 6490.0
+                # radius conversion factor from pixel to m.
+                self.rconversion = 2.7e-4
+                # height of the disks in m
+                self.height = 3.1e-3
+                # boundary width
+                self.width = 20e-3
+                self.experiment = True
             else:
                 print("Error: Unknown type of data! Doing nothing.")
 
@@ -228,7 +247,8 @@ class Configuration:
                 for i in range(len(tups)):
                     for j in tups:
                         if (tups[i] != j and tups[i][0] == j[1] and tups[i][1] == j[0]):
-                            dups_bool[i] = True   
+                            dups_bool[i] = True
+                        else: dups_bool[i] = False
                 
                 #Add dups_bool array to the last column of the data frame
                 con_data['conbool'] = dups_bool
@@ -244,7 +264,7 @@ class Configuration:
                 #Filter entries and determine if slipping or not
                 for k in range(len(dups_bool)):
                     try:
-                        if con_frame['conbool'][k] == 'False':
+                        if con_frame['conbool'][k] == False:
                                 self.I.append(con_frame['id1'][k])
                                 self.J.append(con_frame['id2'][k])
                                 fn0.append(con_frame['fn'][k])
@@ -285,6 +305,7 @@ class Configuration:
                 self.fnor=np.array(fn0)
                 self.ftan=np.array(ft0)
                 self.fullmobi=np.array(fm0)
+                print(self.I)
                 
                 self.nx=np.zeros(self.ncon)
                 self.ny=np.zeros(self.ncon)
