@@ -67,7 +67,7 @@ class Analysis:
 		elif self.conf.datatype=='experiment_annulus':
 				self.small=12.0
 		else:
-				self.small=0.3
+				self.small=5.0
 	
 	# ====== Color helper function, essentially give jet color map in a convenient form ====
 	def color_init(self,Fmax=3.):

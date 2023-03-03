@@ -60,10 +60,15 @@ class Configuration:
                 self.prefix1='DSC'
                 self.prefix2='_solved_Tracke_'
             elif (datatype == 'experiment_annulus'):
-                #Radius of the inner ring
-                self.R1 = 850
-                #Radius of the outer ring
-                self.R2 = 1700
+                #Radius of the inner ring in experiment
+                self.R1 = 833
+                #Radius of the outer ring in experiment
+                self.R2 = 1745
+                #Coordinates of midpoint
+                self.mid_x = 1822
+                self.mid_y = 1776
+                #Size of boundary texture
+                self.texture = 26
                 #Strainstep of the experiment
                 self.step = strainstep
                 #Set friction coefficient
@@ -83,6 +88,7 @@ class Configuration:
                 self.width = 20e-3
                 self.experiment = True
             elif (datatype == 'test'):
+                # Use this for analysing artificial packings
                 #Strainstep of the experiment
                 self.step = strainstep
                 #Set friction coefficient
@@ -305,8 +311,7 @@ class Configuration:
                 self.fnor=np.array(fn0)
                 self.ftan=np.array(ft0)
                 self.fullmobi=np.array(fm0)
-                print(self.I)
-                
+
                 self.nx=np.zeros(self.ncon)
                 self.ny=np.zeros(self.ncon)
                 for k in range(self.ncon):
@@ -556,19 +561,13 @@ class Configuration:
             print ("Added boundaries!")
         
         #### ======================== Boundary integration =======================================================
-        def AddBoundaryContactsAnnulus(self,threshold=30,Brad=30.0):
+        def AddBoundaryContactsAnnulus(self,threshold=50):
             # For getting positions
             self.addBoundaryAnnulus=True
-            
-            #Find extreme values
-            upidx=np.max(self.y)
-            downidx=np.min(self.y)
-            leftidx=np.min(self.x)
-            rightidx=np.max(self.x)
-            
-            #Compute coordinates midpoints
-            self.mid_x = (leftidx+rightidx)/2
-            self.mid_y = (upidx+downidx)/2
+
+            #Set radius of boundary particles
+            #This needs to tweaking
+            Brad = self.texture
             
             # Boundary positions:
             # Coordinates of virtual boundary particles: at mid_x and y one Brad off from radi
@@ -619,6 +618,11 @@ class Configuration:
             self.I = np.append(self.I, self.bindices[0])
             self.J = np.append(self.J, self.bindices[1])
             fullmobi_add.append(1)
+
+            #Compute forces and stuff, this needs to change!
+            fnor0 = ftan0 = nx0 = ny0 = 1
+
+            #Add to lists
             fnor_add.append(fnor0)
             ftan_add.append(ftan0)
             nx_add.append(nx0)
@@ -634,7 +638,7 @@ class Configuration:
             self.nx=np.concatenate((self.nx,np.array(nx_add)))
             self.ny=np.concatenate((self.ny,np.array(ny_add)))
             self.ncon=len(self.I)
-            self.N+=2
+            self.N+=2 #Since we have two boundary particles
             print ("Added boundaries!")
 
         def AddNextBoundaryContacts(self,threshold=15,Brad=20.0):

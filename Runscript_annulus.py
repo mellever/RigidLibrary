@@ -17,10 +17,8 @@ topdir='/home/melle/Documents/Code/RigidLibrary/DataAnnulus/'
 # experimental friction coefficient
 mu=0.3
 
-# Experiment type, choose one of three options:
+# Experiment type, for other types please use a different runscript.
 datatype = 'experiment_annulus'
-#datatype = 'experiment_square'
-#datatype = 'simulation'
 
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
 experiment_nums=['1', '2']
@@ -48,7 +46,7 @@ for experiment in experiment_nums:
                 ThisConf = CF.Configuration(topdir+experiment,datatype ,mu, u)
                 #Reading in the data
                 ThisConf.ReadExpdataAnnulus(verbose=False)
-                #Adding boundary contacts
+                #Adding boundary contacts, passsing threshold argument is possible
                 ThisConf.AddBoundaryContactsAnnulus()
                
                 #Setting up and playing the pebble game
