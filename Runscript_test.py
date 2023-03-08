@@ -24,7 +24,7 @@ datatype = 'test'
 #datatype = 'simulation'
 
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
-experiment_nums=['3']
+experiment_nums=['4']
 
 
 # Loop over experiment
