@@ -61,14 +61,14 @@ class Configuration:
                 self.prefix2='_solved_Tracke_'
             elif (datatype == 'experiment_annulus'):
                 #Radius of the inner ring in experiment
-                self.R1 = 833
+                self.R1 = 1463
                 #Radius of the outer ring in experiment
-                self.R2 = 1745
+                self.R2 = 2998
                 #Coordinates of midpoint
-                self.mid_x = 1822
-                self.mid_y = 1776
+                self.mid_x = 3016
+                self.mid_y = 3000
                 #Size of boundary texture
-                self.texture = 26
+                self.texture = 30
                 #Strainstep of the experiment
                 self.step = strainstep
                 #Set friction coefficient
@@ -247,14 +247,22 @@ class Configuration:
                     print("Error: there is no contact data here")
                     return 1
                 
-                #Create a list of entries that contain a duplicate
+                #Create tupples of the contacts and check for symmetric tupples
                 tups = list(zip(con_data.id1, con_data.id2))
-                dups_bool = [None]*len(tups)                       
+                dups_bool = [None]*len(tups)                     
+                
+                #Filter the symmetric tupples
+                l = set(tups) & {(b, a) for a, b in tups}
+                symtups = {(a, b) for a, b in l if a < b}
+                
+                #If symmetric set True, else False.
                 for i in range(len(tups)):
-                    for j in tups:
-                        if (tups[i] != j and tups[i][0] == j[1] and tups[i][1] == j[0]):
-                            dups_bool[i] = True
-                        else: dups_bool[i] = False
+                    if (tups[i] in symtups):
+                        dups_bool[i] = True
+                    elif ((tups[i][1], tups[i][0]) in symtups):
+                        dups_bool[i] = True
+                    else:
+                        dups_bool[i] = False
                 
                 #Add dups_bool array to the last column of the data frame
                 con_data['conbool'] = dups_bool
@@ -266,7 +274,7 @@ class Configuration:
                 fn0=[]
                 ft0=[]
                 fm0=[]
-                
+
                 #Filter entries and determine if slipping or not
                 for k in range(len(dups_bool)):
                     try:
@@ -302,7 +310,7 @@ class Configuration:
                     except:
                         if verbose:
                             print('dropped duplicate')
-                        
+                
                         
                 #Final arrays
                 self.ncon=len(fm0)
@@ -311,6 +319,7 @@ class Configuration:
                 self.fnor=np.array(fn0)
                 self.ftan=np.array(ft0)
                 self.fullmobi=np.array(fm0)
+                np.savetxt("adjacency.txt", np.column_stack((self.I, self.J)), delimiter=",", fmt='%i')
 
                 self.nx=np.zeros(self.ncon)
                 self.ny=np.zeros(self.ncon)
@@ -561,12 +570,12 @@ class Configuration:
             print ("Added boundaries!")
         
         #### ======================== Boundary integration =======================================================
-        def AddBoundaryContactsAnnulus(self,threshold=50):
+        def AddBoundaryContactsAnnulus(self,threshold=30):
             # For getting positions
             self.addBoundaryAnnulus=True
 
             #Set radius of boundary particles
-            #This needs to tweaking
+            #This needs some tweaking, since we are working with innies instead of outies. 
             Brad = self.texture
             
             # Boundary positions:

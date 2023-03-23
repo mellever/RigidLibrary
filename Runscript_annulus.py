@@ -21,7 +21,7 @@ mu=0.3
 datatype = 'experiment_annulus'
 
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
-experiment_nums=['1', '2']
+experiment_nums=['2']
 
 
 
@@ -39,8 +39,6 @@ for experiment in experiment_nums:
         
         # Loop over strain steps for a given experiment
         # Start at 1 since steps start at 1. Ends at nsteps.
-        # For now we take nsteps=1 because of error in the data
-        nsteps = 1
         for u in range(1, nsteps+1):
                 #Creating configuration
                 ThisConf = CF.Configuration(topdir+experiment,datatype ,mu, u)
@@ -48,9 +46,10 @@ for experiment in experiment_nums:
                 ThisConf.ReadExpdataAnnulus(verbose=False)
                 #Adding boundary contacts, passsing threshold argument is possible
                 ThisConf.AddBoundaryContactsAnnulus()
-               
+                
                 #Setting up and playing the pebble game
                 ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
+                
                 #Play pebble game
                 ThisPebble.play_game()
                 # compute rigid clusters
@@ -75,7 +74,9 @@ for experiment in experiment_nums:
                 #ThisAnalysis.plotPebbles(True,True,True,False,False)
                 
                 #Plot pebbles has the following arguments: plotCir,plotPeb,plotPebCon,plotClus,plotOver
+                fig1 = ThisAnalysis.plotPebbles(True,True,True,True,False)
                 fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
+                #fig3 = ThisAnalysis.plotPebbles(True,True,False,True,False)
                 #For saving the plot as plot.pickle
                 #pickle.dump(fig2, open('plot.pickle', 'wb')) # This is for Python 3 - py2 may need `file` instead of `open`
                 #fig2 = ThisAnalysis.plotPebbles(True,True,True,True,False)

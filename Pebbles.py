@@ -209,8 +209,8 @@ class Pebbles:
                     rig0=self.check_neighbors(i,pebblescopy,marked,rigid)
                     rig1=self.check_neighbors(j,pebblescopy,marked,rigid)
                     if self.verbose:
-                        print(rig0)
-                        print(rig1)
+                        print("rig 0 = " + str(rig0))
+                        print("rig 1 = " + str(rig1))
                     # only if for both, at least one neighbor is rigid
                     if (rig0 and rig1):
                         done=False

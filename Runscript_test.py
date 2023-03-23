@@ -24,7 +24,7 @@ datatype = 'test'
 #datatype = 'simulation'
 
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
-experiment_nums=['4']
+experiment_nums=['2']
 
 
 # Loop over experiment
@@ -50,7 +50,7 @@ for experiment in experiment_nums:
                 ThisConf.ReadExpdataAnnulus(verbose=False)
                
                 #Setting up and playing the pebble game
-                ThisPebble = PB.Pebbles(ThisConf,2,3,'nothing',False)
+                ThisPebble = PB.Pebbles(ThisConf,2,3,'nothing',True)
                 #Play pebble game
                 ThisPebble.play_game()
                 # compute rigid clusters
