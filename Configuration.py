@@ -611,11 +611,25 @@ class Configuration:
             for k in range(len(padd)):
                 self.I = np.append(self.I, self.bindices[labels[k]])
                 self.J = np.append(self.J, padd[k])
+                neii=np.nonzero(self.I[:self.ncon]==padd[k])[0]
+                neij=np.nonzero(self.J[:self.ncon]==padd[k])[0]
+
                 #Always add double bound
                 fullmobi_add.append(0)
                 
-                #Compute forces and stuff, this needs to change!
-                fnor0 = ftan0 = nx0 = ny0 = 1
+                #Compute forces if neighbours are present
+                if (len(neii)>0 or len(neij)>0):
+                    # Flip direction of force, is this correct?
+                    nx0 = ny0 = -1
+
+                    # Compute force on this contact by force balance
+                    # Two minus signs on second part cancel out
+                    ftotx=np.sum(self.fnor[neii]*self.nx[neii]-self.ftan[neii]*self.ny[neii])-np.sum(self.fnor[neij]*self.nx[neij]-self.ftan[neij]*self.ny[neij])
+                    ftoty=np.sum(self.fnor[neii]*self.ny[neii]+self.ftan[neii]*self.nx[neii])-np.sum(self.fnor[neij]*self.ny[neij]+self.ftan[neij]*self.nx[neij])
+                    fnor0=ftotx*nx0+ftoty*ny0
+                    ftan0=ftotx*(-ny0)+ftoty*nx0
+
+                else: fnor0 = ftan0 = nx0 = ny0 = 1
                 
                 #Add data to list
                 fnor_add.append(fnor0)
@@ -628,8 +642,8 @@ class Configuration:
             self.J = np.append(self.J, self.bindices[1])
             fullmobi_add.append(1)
 
-            #Compute forces and stuff, this needs to change!
-            fnor0 = ftan0 = nx0 = ny0 = 1
+            #Forces between boundary particles are zero?
+            fnor0 = ftan0 = nx0 = ny0 = 0
 
             #Add to lists
             fnor_add.append(fnor0)

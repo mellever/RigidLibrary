@@ -74,13 +74,13 @@ for experiment in experiment_nums:
                 #ThisAnalysis.plotPebbles(True,True,True,False,False)
                 
                 #Plot pebbles has the following arguments: plotCir,plotPeb,plotPebCon,plotClus,plotOver
-                fig1 = ThisAnalysis.plotPebbles(True,True,True,True,False)
+                #fig1 = ThisAnalysis.plotPebbles(True,True,True,True,False)
                 fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
                 #fig3 = ThisAnalysis.plotPebbles(True,True,False,True,False)
                 #For saving the plot as plot.pickle
                 #pickle.dump(fig2, open('plot.pickle', 'wb')) # This is for Python 3 - py2 may need `file` instead of `open`
                 #fig2 = ThisAnalysis.plotPebbles(True,True,True,True,False)
-                """
+                
                 ######### continuing with the Hessian now 
                 # constructing the matrix
                 #  makeHessian(self,frictional,recomputeFnor,stabilise,verbose=False):
@@ -110,6 +110,6 @@ for experiment in experiment_nums:
                 #    # Conditional probabilities of being rigid by displacement while being rigid by pebble
                 #    print (P_disp_if_pebble,P_pebble_if_disp)
                 #    # D2_min, needs assessment
-                #    fig7 = ThisAnalysis.DisplacementCorrelateD2min(True)
-                """    
+                #    fig7 = ThisAnalysis.DisplacementCorrelateD2min(True) 
+                
                 plt.show()                              
