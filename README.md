@@ -5,6 +5,8 @@ This is my version of the Silke Henkes RigidLibrary adjusted for the annulus and
 - [x] Implement multiple frames
 - [x] Boundary conditions
 - [ ] Solving rigid cluster color issue &rarr; do after complete data is obtained
+- [ ] Compute forces on the boundary particles
+
 
 
 ### Miscellaneous features
