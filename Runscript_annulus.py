@@ -44,6 +44,8 @@ for experiment in experiment_nums:
                 ThisConf = CF.Configuration(topdir+experiment,datatype ,mu, u)
                 #Reading in the data
                 ThisConf.ReadExpdataAnnulus(verbose=False)
+                ThisConf.Tiling()
+                """
                 #Adding boundary contacts, passsing threshold argument is possible
                 ThisConf.AddBoundaryContactsAnnulus()
                 
@@ -111,5 +113,5 @@ for experiment in experiment_nums:
                 #    print (P_disp_if_pebble,P_pebble_if_disp)
                 #    # D2_min, needs assessment
                 #    fig7 = ThisAnalysis.DisplacementCorrelateD2min(True) 
-                
+                """
                 plt.show()                              
