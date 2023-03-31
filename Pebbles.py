@@ -393,22 +393,22 @@ class Pebbles:
             if (pbcopy[i,k].astype(int)==-1):
                 ## print ('found a free pebble here at vertex' + str(i))
                 found=True
-            if not found:
-                # Look at the contacts covered by pebbles in turn. If they haven't been accessed by the search yet
-                # look along those paths, recursively, until you find something (or not)
-                # For marked sites: if the site is marked rigid, there is no pebble here, stop the subloop. If it's marked floppy, there must be a pebble
-                # somewhere along its path, so stop the whole thing with a positive result
-                if marked[int(i)]==True:
-                    if (rigid[int(i)]==False):
-                        found=True
-                else:
-                    k=0
-                    while (not found) and (k<self.game1):
-                        j=pbcopy[i,k].astype(int)
-                        if (not seen[j]):
-                            path[i]=pbcopy[i,k].astype(int) # just use the neighbor. rewrite as I and J later if useful
-                            found=self.find_pebble2(pbcopy,j,seen,path,marked,rigid)
-                        k+=1
+        if not found:
+            # Look at the contacts covered by pebbles in turn. If they haven't been accessed by the search yet
+            # look along those paths, recursively, until you find something (or not)
+            # For marked sites: if the site is marked rigid, there is no pebble here, stop the subloop. If it's marked floppy, there must be a pebble
+            # somewhere along its path, so stop the whole thing with a positive result
+            if marked[int(i)]==True:
+                if (rigid[int(i)]==False):
+                    found=True
+            else:
+                k=0
+                while (not found) and (k<self.game1):
+                    j=pbcopy[i,k].astype(int)
+                    if (not seen[j]):
+                        path[i]=pbcopy[i,k].astype(int) # just use the neighbor. rewrite as I and J later if useful
+                        found=self.find_pebble2(pbcopy,j,seen,path,marked,rigid)
+                    k+=1
         return found
         
     # Rearranging search paths after pebble is found
