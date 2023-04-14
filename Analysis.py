@@ -191,7 +191,7 @@ class Analysis:
 			axval= fig.add_subplot(1, 1, 1)
 		if 'timestamp' in kwargs:
 			axval.text(0.0,0.4*self.Ly,'T= ' +str(kwargs['timestamp']),fontsize=18)
-		for k in range(self.N):
+		for k in range(self.N-3):
 			t=0
 			# Particle circles
 			if (plotCir):

@@ -21,7 +21,7 @@ mu=0.3
 datatype = 'experiment_annulus'
 
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
-experiment_nums=['2']
+experiment_nums=['3']
 
 
 
@@ -37,17 +37,19 @@ for experiment in experiment_nums:
             #if no data is found for an experiment number go to the next experiment
             continue
         
+        
+        nsteps=1
         # Loop over strain steps for a given experiment
         # Start at 1 since steps start at 1. Ends at nsteps.
         for u in range(1, nsteps+1):
+                u = 1
                 #Creating configuration
-                ThisConf = CF.Configuration(topdir+experiment,datatype ,mu, u)
+                ThisConf = CF.Configuration(topdir+experiment,datatype, mu, u)
                 #Reading in the data
                 ThisConf.ReadExpdataAnnulus(verbose=False)
-                ThisConf.Tiling()
-                """
+                #ThisConf.Tiling()
                 #Adding boundary contacts, passsing threshold argument is possible
-                ThisConf.AddBoundaryContactsAnnulus()
+                #ThisConf.AddBoundaryContactsAnnulus()
                 
                 #Setting up and playing the pebble game
                 ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
@@ -82,7 +84,7 @@ for experiment in experiment_nums:
                 #For saving the plot as plot.pickle
                 #pickle.dump(fig2, open('plot.pickle', 'wb')) # This is for Python 3 - py2 may need `file` instead of `open`
                 #fig2 = ThisAnalysis.plotPebbles(True,True,True,True,False)
-                
+                """
                 ######### continuing with the Hessian now 
                 # constructing the matrix
                 #  makeHessian(self,frictional,recomputeFnor,stabilise,verbose=False):

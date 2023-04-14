@@ -63,12 +63,12 @@ class Configuration:
                 self.prefix2='_solved_Tracke_'
             elif (datatype == 'experiment_annulus'):
                 #Radius of the inner ring in experiment
-                self.R1 = 1463
+                self.R1 = 1548
                 #Radius of the outer ring in experiment
-                self.R2 = 2998
+                self.R2 = 2995
                 #Coordinates of midpoint
-                self.mid_x = 3016
-                self.mid_y = 3000
+                self.mid_x = 3134
+                self.mid_y = 3028
                 #Size of boundary texture
                 self.texture = 30
                 #Strainstep of the experiment
@@ -225,7 +225,9 @@ class Configuration:
         def ReadExpdataAnnulus(self, verbose):
                 prefix = self.folder +'/particle_positions.txt'
                 try:
-                    pos_data = pandas.read_csv(prefix, names=['id', 'x', 'y', 'r', 'n'])
+                    #read in data of following format:
+                    #framenumber, particle id, x, y, radius, boundary
+                    pos_data = pandas.read_csv(prefix, names=['n','id', 'x', 'y', 'r', 'b'])
                     pos_data = pos_data[pos_data['n'] == self.step]
                     self.x = pos_data.loc[:,'x'].to_numpy()
                     self.y = pos_data.loc[:,'y'].to_numpy()
@@ -240,35 +242,17 @@ class Configuration:
                     self.N = 0
                     print("Error: there is no position data here")
                     return 1
-
+                
                 prefix = self.folder +'/Adjacency_list.txt'
                 try:
-                    con_data = pandas.read_csv(prefix, names=['n', 'id1', 'id2', 'ft', 'fn'])
+                    con_data = pandas.read_csv(prefix, names=['n', 'id2', 'id1', 'ft', 'fn'])
                     con_data= con_data[con_data['n'] == self.step]
                 except:
                     print("Error: there is no contact data here")
                     return 1
-                
-                #Create tupples of the contacts and check for symmetric tupples
-                tups = list(zip(con_data.id1, con_data.id2))
-                dups_bool = [None]*len(tups)                     
-                
-                #Filter the symmetric tupples
-                l = set(tups) & {(b, a) for a, b in tups}
-                symtups = {(a, b) for a, b in l if a < b}
-                
-                #If symmetric set True, else False.
-                for i in range(len(tups)):
-                    if (tups[i] in symtups):
-                        dups_bool[i] = True
-                    elif ((tups[i][1], tups[i][0]) in symtups):
-                        dups_bool[i] = True
-                    else:
-                        dups_bool[i] = False
-                
-                #Add dups_bool array to the last column of the data frame
-                con_data['conbool'] = dups_bool
-                con_frame = con_data #This step is to supress copy warning, since adding column creates a copy. 
+                            
+                #Temporary
+                con_frame = con_data
                 
                 #Create lists
                 self.I=[]
@@ -278,42 +262,31 @@ class Configuration:
                 fm0=[]
 
                 #Filter entries and determine if slipping or not
-                for k in range(len(dups_bool)):
+                for k in range(len(con_frame['id1'])):
                     try:
-                        if con_frame['conbool'][k] == False:
-                                self.I.append(con_frame['id1'][k])
-                                self.J.append(con_frame['id2'][k])
-                                fn0.append(con_frame['fn'][k])
-                                ft0.append(con_frame['ft'][k])
-                                if (abs(con_frame['ft'][k])/con_frame['fn'][k]>self.mu):
-                                    fm0.append(1)
-                                else:
-                                    fm0.append(0)
+                        self.I.append(con_frame['id1'][k])
+                        self.J.append(con_frame['id2'][k])
+                        
+                        # Search other force and take the mean
+                        norm2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['fn'].iloc[0]
+                        tan2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['ft'].iloc[0]
+                        norm = (con_frame['fn'][k] + norm2)/2
+                        tan = (con_frame['fn'][k] + tan2)/2
+                        
+                        fn0.append(norm)
+                        ft0.append(tan)
+                        if (abs(tan)/norm>self.mu):
+                            fm0.append(1)
                         else:
-                            self.I.append(con_frame['id1'][k])
-                            self.J.append(con_frame['id2'][k])
+                            fm0.append(0)
                             
-                            # Search other force and take the mean
-                            norm2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['fn'].iloc[0]
-                            tan2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['ft'].iloc[0]
-                            norm = (con_frame['fn'][k] + norm2)/2
-                            tan = (con_frame['fn'][k] + tan2)/2
-                            
-                            fn0.append(norm)
-                            ft0.append(tan)
-                            if (abs(tan)/norm>self.mu):
-                                fm0.append(1)
-                            else:
-                                fm0.append(0)
-                                
-                            #Now delete corresponding entry to remove duplicates. 
-                            #Check: len(self.I) = (#True in dups_bool)/2 + (#False in dups_bool)
-                            con_frame.drop(con_frame[(con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])].index, inplace=True)
+                        #Now delete corresponding entry to remove duplicates. 
+                        #Check: len(self.I) = (#True in dups_bool)/2 + (#False in dups_bool)
+                        con_frame.drop(con_frame[(con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])].index, inplace=True)
                     except:
                         if verbose:
                             print('dropped duplicate')
-                
-                        
+                             
                 #Final arrays
                 self.ncon=len(fm0)
                 self.I = np.array(self.I)-1 #Minus one since id starts counting at 1, while indices start at 0
@@ -321,7 +294,10 @@ class Configuration:
                 self.fnor=np.array(fn0)
                 self.ftan=np.array(ft0)
                 self.fullmobi=np.array(fm0)
-                np.savetxt("adjacency.txt", np.column_stack((self.I, self.J)), delimiter=",", fmt='%i')
+                
+                print(self.ncon)
+                print(self.I, self.x[self.I], self.y[self.I])
+                print(self.J, self.x[self.J], self.y[self.J])
 
                 self.nx=np.zeros(self.ncon)
                 self.ny=np.zeros(self.ncon)
@@ -373,14 +349,7 @@ class Configuration:
                     #plt.plot([xor, xor+fx], [yor, yor+fy])
                     xor += fx
                     yor += fy
-            plt.show()
-            
-            
-            
-            
-
-            
-                
+            plt.show()                
 
 
 
