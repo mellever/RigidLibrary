@@ -144,14 +144,15 @@ class Configuration:
                 parfile.close()
                 self.Lx = self.L
                 self.Ly = self.L
-                self.rad = sp.loadtxt(folder + 'posinit.dat', usecols=(3,))
+                self.rad = np.loadtxt(folder + 'posinit.dat', usecols=(3,))
 
         #######========== Simulation data read-in ==================
         # snap is the label, and distSnapshot tells me how many time units they are apart (in actual time, not steps)
-        def readSimdata(self, snap, verbose0, distSnapshot0=100.0):
+        def readSimdata(self, snap, verbose0, distSnapshot0=1000):
                 self.verbose = verbose0
                 self.distSnapshot = distSnapshot0
                 self.strain = self.gammadot*(1.0*snap)*self.distSnapshot
+
                 if (self.verbose):
                         print('L=' + str(self.L))
                         print('Np=' + str(self.N))
@@ -159,7 +160,7 @@ class Configuration:
                         print('xi=' + str(self.xi))
                         print('phi=' + str(self.phi))
                         print('strain=' + str(self.strain))
-                filename = foldername + '/PosVel' + str(snap) + '.dat'
+                filename = self.folder + '/PosVel' + str(snap) + '.dat'
                 if (self.verbose):
                         print(filename)
                 isPosdata = False
@@ -170,6 +171,7 @@ class Configuration:
                                 isPosdata = True
                 except:
                         isPosdata = False
+                
 
                 if (not isPosdata):
                         print('error: no position data at snapshot' + str(snap))
@@ -180,15 +182,15 @@ class Configuration:
                         self.alpha = 0.0
                         self.N = 0
                 else:
-                        self.x = data[0, :]
-                        self.y = data[1, :]
-                        self.alpha = data[2, :]
-                        self.dx = data[3, :]
-                        self.dy = data[4, :]
-                        self.dalpha = data[5, :]
+                        self.x = data[:,0]
+                        self.y = data[:,1]
+                        self.alpha = data[:,2]
+                        self.dx = data[:,3]
+                        self.dy = data[:,4]
+                        self.dalpha = data[:,5]
                         del data
 
-                filename = foldername + '/Contact' + str(snap) + '.dat'
+                filename = self.folder + '/Contact' + str(snap) + '.dat'
                 if (self.verbose):
                         print(filename)
                 isCondata = False
@@ -209,13 +211,13 @@ class Configuration:
                         self.Jfull = -1
                 else:
                         self.noConf = False
-                        self.I = list(data[0, :].astype(int))
-                        self.J = list(data[1, :].astype(int))
-                        self.fullmobi = data[4, :].astype(int)
-                        self.nx = data[2, :]
-                        self.ny = data[3, :]
-                        self.fnor = data[5, :]
-                        self.ftan = data[6, :]+data[7, :]
+                        self.I = list(data[:,0].astype(int))
+                        self.J = list(data[:,1].astype(int))
+                        self.fullmobi = data[:,4].astype(int)
+                        self.nx = data[:,2]
+                        self.ny = data[:,3]
+                        self.fnor = data[:,5]
+                        self.ftan = data[:,6]+data[:,7]
                         del data
                         self.x -= self.L*np.round(self.x/self.L)
                         self.y -= self.L*np.round(self.y/self.L)

@@ -66,6 +66,8 @@ class Analysis:
 				self.small=8.0
 		elif self.conf.datatype=='experiment_annulus':
 				self.small=12.0
+		elif self.conf.datatype=='simulation':
+				self.small=0.2
 		else:
 				self.small=5.0
 	
