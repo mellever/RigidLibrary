@@ -10,11 +10,14 @@ import matplotlib.pyplot as plt
 
 class Tiling:
     
-    def __init__(self, conf, scale):
+    def __init__(self, conf):
         self.conf = conf
         self.I = conf.I 
         self.J = conf.J
-        self.scale = scale
+        self.x = conf.x
+        self.y = conf.y
+        self.fn = conf.fnor
+        self.ft = conf.ftan
         
     #Plotting the graph
     def graph(self):
@@ -29,30 +32,51 @@ class Tiling:
     
     #Plotting the Maxwell Cremona tiling
     def tile(self):
-        color = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(np.max(self.I)+1)]
-        for i in self.I:
-            #Scaling parameter, remove later
-            scale = 1000
-            #Origin coordinates
-            xor = self.x[i]
-            yor = self.y[i]
-            #Determine contacts
-            x = np.argwhere(self.J==i).flatten()
-            y = np.argwhere(self.I==i).flatten()
-            print(y)
-            z = np.concatenate([x,y])
-            xhat = self.J[y]
-            yhat = self.I[x]
-            zhat = np.concatenate([xhat,yhat])
-            #Plot
-            for k in range(len(z)):
-                theta = np.arctan2(self.y[i]-self.y[zhat[k]], self.x[i]-self.x[zhat[k]])
-                fx = scale*self.fnor[z[k]]*np.cos(theta)
-                fy = scale*self.fnor[z[k]]*np.sin(theta)
-                print(i,k,theta, self.fnor[z[k]])
-                plt.arrow(xor, yor, fx, fy, width=.08, facecolor=color[i])
-                #plt.plot([xor, xor+fx], [yor, yor+fy])
-                xor += fx
-                yor += fy
-        plt.show()                
+        if isinstance(self.I, int):
+            print('no data')
+        else:
+            #Generate colors for plotting
+            color = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(np.max(self.I)+1)]
+            for i in self.I:
+                #Determine indices of contacts and put together in one array
+                argI = np.argwhere(self.J==i).flatten()
+                argJ = np.argwhere(self.I==i).flatten()
+                arg = np.concatenate([argI,argJ])
+                #Get particle ids from indices and put together in one array
+                I = self.I[argI]
+                J = self.J[argJ]
+                con = np.concatenate([I,J])
+                
+                #if we have less than three contacts move to the next one
+                if len(con) < 3:
+                    continue
+                
+                #Start position of tile, this needs to be modified
+                xor = (self.x[i]+self.x[con[0]]+self.x[con[1]])/3
+                yor = (self.y[i]+self.y[con[0]]+self.y[con[1]])/3
+                xor = yor = 0
+                
+                
+                #Plot
+                sumx = sumy = 0
+                for k in range(len(arg)):
+                    theta = np.arctan2(self.y[i]-self.y[con[k]], self.x[i]-self.x[con[k]])
+                    if self.ft[arg[k]] > 0:
+                        fx = self.fn[arg[k]]*np.cos(theta)-self.ft[arg[k]]*np.sin(theta)
+                        fy = self.fn[arg[k]]*np.sin(theta)+self.ft[arg[k]]*np.cos(theta)
+                    else:
+                        fx = self.fn[arg[k]]*np.cos(theta)+np.abs(self.ft)[arg[k]]*np.sin(theta)
+                        fy = self.fn[arg[k]]*np.sin(theta)-np.abs(self.ft)[arg[k]]*np.cos(theta)
+
+                    print(i, k, fx, fy)
+                                    
+                    sumx += fx
+                    sumy += fy
+                    
+                    #plt.arrow(xor, yor, fx, fy, width=.08, facecolor=color[i])
+                    plt.plot([xor, xor+fx], [yor, yor+fy], color=color[i], marker='.')
+                    xor += fx
+                    yor += fy
+                print('sum', sumx, sumy)
+            plt.show()                
     

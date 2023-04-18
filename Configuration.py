@@ -174,7 +174,8 @@ class Configuration:
                 
 
                 if (not isPosdata):
-                        print('error: no position data at snapshot' + str(snap))
+                        if self.verbose:
+                            print('error: no position data at snapshot' + str(snap))
                         self.x = 0.0
                         self.y = 0.0
                         self.dx = 0.0
@@ -202,7 +203,8 @@ class Configuration:
                 except:
                         isCondata = False
                 if ((not isCondata) or (not isPosdata)):
-                        print('error: no position data at snapshot' + str(snap))
+                        if self.verbose:
+                            print('error: no position data at snapshot' + str(snap))
                         self.noConf = True
                         self.I = -1
                         self.J = -1
@@ -211,8 +213,8 @@ class Configuration:
                         self.Jfull = -1
                 else:
                         self.noConf = False
-                        self.I = list(data[:,0].astype(int))
-                        self.J = list(data[:,1].astype(int))
+                        self.I = data[:,0].astype(int)
+                        self.J = data[:,1].astype(int)
                         self.fullmobi = data[:,4].astype(int)
                         self.nx = data[:,2]
                         self.ny = data[:,3]
@@ -224,16 +226,18 @@ class Configuration:
                         self.ncon = len(self.I)
 
         #========== Experimental data read-in for annulus ==================
-        def ReadExpdataAnnulus(self, verbose):
+        def ReadExpdataAnnulusPandas(self, verbose):
                 prefix = self.folder +'/particle_positions.txt'
                 try:
                     #read in data of following format:
                     #framenumber, particle id, x, y, radius, boundary
                     pos_data = pandas.read_csv(prefix, names=['n','id', 'x', 'y', 'r', 'b'])
                     pos_data = pos_data[pos_data['n'] == self.step]
+                    self.id = pos_data.loc[:,'id'].to_numpy()
                     self.x = pos_data.loc[:,'x'].to_numpy()
                     self.y = pos_data.loc[:,'y'].to_numpy()
                     self.rad = pos_data.loc[:,'r'].to_numpy()
+                    self.boundary = pos_data.loc[:,'b'].to_numpy()
                     self.N = len(self.rad)
                     self.Lx = np.amax(self.x)-np.amin(self.x)
                     self.Ly = np.amax(self.y)-np.amin(self.y)
@@ -247,8 +251,17 @@ class Configuration:
                 
                 prefix = self.folder +'/Adjacency_list.txt'
                 try:
-                    con_data = pandas.read_csv(prefix, names=['n', 'id2', 'id1', 'ft', 'fn'])
+                    #read in data of following format:
+                    #framenumber, id1, id2, ft, fn
+                    con_data = pandas.read_csv(prefix, names=['n', 'id1', 'id2', 'ft', 'fn'])
+                    #length of previous framenumer
+                    if self.step == 1:
+                        len_prev = 0
+                    else:
+                        len_prev = len(con_data[con_data['n'] <= self.step-1]['id1'])
+                    #data for current framenumber
                     con_data= con_data[con_data['n'] == self.step]
+                    
                 except:
                     print("Error: there is no contact data here")
                     return 1
@@ -261,19 +274,24 @@ class Configuration:
                 self.J=[]
                 fn0=[]
                 ft0=[]
-                fm0=[]
+                fm0=[]                   
 
                 #Filter entries and determine if slipping or not
-                for k in range(len(con_frame['id1'])):
+                for k in range(len_prev, len_prev + len(con_frame['id1'])):    
                     try:
-                        self.I.append(con_frame['id1'][k])
-                        self.J.append(con_frame['id2'][k])
+                        #Add particle id's, identified by indices, to list.
+                        i = con_frame['id1'][k]
+                        j = con_frame['id2'][k]
+                        argi = np.argwhere(self.id == i).flatten()[0]
+                        argj = np.argwhere(self.id == j).flatten()[0]
+                        self.I.append(argi)
+                        self.J.append(argj)
                         
-                        # Search other force and take the mean
+                        # Search other force and take the mean, might not be relevant.
                         norm2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['fn'].iloc[0]
                         tan2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['ft'].iloc[0]
                         norm = (con_frame['fn'][k] + norm2)/2
-                        tan = (con_frame['fn'][k] + tan2)/2
+                        tan = (con_frame['ft'][k] + tan2)/2
                         
                         fn0.append(norm)
                         ft0.append(tan)
@@ -281,25 +299,20 @@ class Configuration:
                             fm0.append(1)
                         else:
                             fm0.append(0)
-                            
                         #Now delete corresponding entry to remove duplicates. 
                         #Check: len(self.I) = (#True in dups_bool)/2 + (#False in dups_bool)
                         con_frame.drop(con_frame[(con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])].index, inplace=True)
                     except:
                         if verbose:
                             print('dropped duplicate')
-                             
+                                  
                 #Final arrays
                 self.ncon=len(fm0)
-                self.I = np.array(self.I)-1 #Minus one since id starts counting at 1, while indices start at 0
-                self.J = np.array(self.J)-1 #Minus one since id starts counting at 1, while indices start at 0
+                self.I = np.array(self.I)
+                self.J = np.array(self.J)
                 self.fnor=np.array(fn0)
                 self.ftan=np.array(ft0)
                 self.fullmobi=np.array(fm0)
-                
-                print(self.ncon)
-                print(self.I, self.x[self.I], self.y[self.I])
-                print(self.J, self.x[self.J], self.y[self.J])
 
                 self.nx=np.zeros(self.ncon)
                 self.ny=np.zeros(self.ncon)
@@ -315,43 +328,150 @@ class Configuration:
                 print("Config frame #" +str(self.step)+ " created")      
                 return 0
         
+        def ReadExpdataAnnulusNumpy(self, verbose):    
+                prefix = self.folder +'/particle_positions.txt'
+                try:
+                    coords=np.loadtxt(prefix, delimiter=',')
+                    coords=coords[coords[:,0] == self.step]
+                    self.id=coords[:,1]
+                    self.x=coords[:,2]
+                    self.y=coords[:,3]
+                    self.rad=coords[:,4]
+                    self.boundary=coords[:,5]
+                    self.N=len(self.rad)
+                    self.Lx=np.amax(self.x)-np.amin(self.x)
+                    self.Ly=np.amax(self.y)-np.amin(self.y)
+                    del coords
+                except:
+                    isPosdata=False
+                    self.x=0
+                    self.y=0
+                    self.rad=1 # purely so that we can divide by it ...
+                    self.N=0
+                    print("Error: there is no position data here")
+                
+                #Load in contact data
+                prefix = self.folder +'/Adjacency_list.txt'
+                try:
+                    condata=np.loadtxt(prefix, delimiter=',')
+                    condata=condata[condata[:,0] == self.step]
+                except:
+                    isCondata=False
+                    print ("Error: there is no contact data here")
+                    return 1
+                
+                #Create empty lists
+                #Lists with particle ids
+                self.I=[]
+                self.J=[]
+                
+                #Lists with particle indices, ommit for now.
+                #self.argI=[]
+                #self.argJ=[]
+                
+                #Lists with forces
+                fn0=[]
+                ft0=[]
+                
+                #Frictional or sliding list
+                fm0=[]
+                
+                #Drop duplicates
+                for k in range(len(condata[:,0])):
+                    if condata[:,1][k] > condata[:,2][k]:
+                        #Add contact id's
+                        i = condata[:,1][k].astype(int)
+                        j = condata[:,2][k].astype(int)
+                        argi = np.argwhere(self.id == i).flatten()[0]
+                        argj = np.argwhere(self.id == j).flatten()[0]
+                        
+                        """
+                        #self.I.append(i)
+                        #self.J.append(j)
+                        self.argI.append(argi)
+                        self.argJ.append(argj)
+                        """
+                        
+                        #For now we identify particle id's with indices in the list. Not ideal for debugging, but it works.
+                        #Can be fixed if necessary, see above code for start. 
+                        self.I.append(argi)
+                        self.J.append(argj)
+                        
+                        #Extract forces
+                        fn = condata[:,4][k]
+                        ft = condata[:,3][k]
+                        fn0.append(fn)
+                        ft0.append(ft)
+                        
+                        #Determine frictional or sliding
+                        if (abs(ft)/fn>self.mu):
+                            fm0.append(1)
+                        else:
+                            fm0.append(0)
+                
+                #Final arrays
+                self.ncon=len(fm0)
+                self.I = np.array(self.I)
+                self.J = np.array(self.J)
+                self.fnor=np.array(fn0)
+                self.ftan=np.array(ft0)
+                self.fullmobi=np.array(fm0)
+                
+                self.nx=np.zeros(self.ncon)
+                self.ny=np.zeros(self.ncon)
+                for k in range(self.ncon):
+                        x1=self.x[self.I[k]]
+                        y1=self.y[self.I[k]]
+                        x2=self.x[self.J[k]]
+                        y2=self.y[self.J[k]]
+                        rij=np.sqrt((x1-x2)**2+(y1-y2)**2)
+                        self.nx[k]=(x2-x1)/rij
+                        self.ny[k]=(y2-y1)/rij
+                
+                print("Config frame #" +str(self.step)+ " created")      
+                return 0
+        
+        
         
         #========== Maxwell Cremona tiling -> port this to its own class ==================
-        def Tiling(self):
-            """
+        def Tiling(self, graph, tiling):
             #Plotting the graph
-            for i in self.I:
-                for k in self.J[self.I == i]:
-                    plt.plot([self.x[i], self.x[k]], [self.y[i], self.y[k]])
+            if graph:
+                for i in self.I:
+                    for k in self.J[self.I==i]:
+                        x0, x1, y0, y1 = getConPos2(i, k)
+                        plt.plot([x0, x1], [y0, y1])
+                    break
             plt.show()
-            """
-
+            
             #Plotting the Maxwell Cremona tiling
-            color = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(np.max(self.I)+1)]
-            for i in self.I:
-                #Scaling parameter, remove later
-                scale = 1000
-                #Origin coordinates
-                xor = self.x[i]
-                yor = self.y[i]
-                #Determine contacts
-                x = np.argwhere(self.J==i).flatten()
-                y = np.argwhere(self.I==i).flatten()
-                z = np.concatenate([x,y])
-                xhat = self.J[y]
-                yhat = self.I[x]
-                zhat = np.concatenate([xhat,yhat])
-                #Plot
-                for k in range(len(z)):
-                    theta = np.arctan2(self.y[i]-self.y[zhat[k]], self.x[i]-self.x[zhat[k]])
-                    fx = scale*self.fnor[z[k]]*np.cos(theta)
-                    fy = scale*self.fnor[z[k]]*np.sin(theta)
-                    print(i,k,theta, self.fnor[z[k]])
-                    plt.arrow(xor, yor, fx, fy, width=.08, facecolor=color[i])
-                    #plt.plot([xor, xor+fx], [yor, yor+fy])
-                    xor += fx
-                    yor += fy
-            plt.show()                
+            if tiling:
+                color = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(np.max(self.I)+1)]
+                for i in self.I:
+                    #Scaling parameter, remove later
+                    scale = 1000
+                    #Origin coordinates
+                    xor = self.x[i]
+                    yor = self.y[i]
+                    #Determine contacts
+                    x = np.argwhere(self.J==i).flatten()
+                    y = np.argwhere(self.I==i).flatten()
+                    print(y)
+                    z = np.concatenate([x,y])
+                    xhat = self.J[y]
+                    yhat = self.I[x]
+                    zhat = np.concatenate([xhat,yhat])
+                    #Plot
+                    for k in range(len(z)):
+                        theta = np.arctan2(self.y[i]-self.y[zhat[k]], self.x[i]-self.x[zhat[k]])
+                        fx = scale*self.fnor[z[k]]*np.cos(theta)
+                        fy = scale*self.fnor[z[k]]*np.sin(theta)
+                        print(i,k,theta, self.fnor[z[k]])
+                        plt.arrow(xor, yor, fx, fy, width=.08, facecolor=color[i])
+                        #plt.plot([xor, xor+fx], [yor, yor+fy])
+                        xor += fx
+                        yor += fy
+                plt.show()                
 
 
 
@@ -619,6 +739,102 @@ class Configuration:
             padd.extend(p1)
             labels.extend([0 for k in range(len(p1))])
             p2 =  np.nonzero(np.abs(self.R2 - r - self.rad)<threshold)[0]
+            padd.extend(p2)
+            labels.extend([1 for k in range(len(p2))])
+            
+            #Some arrays for the information of the newly introduced contacts
+            fullmobi_add=[]
+            fnor_add=[]
+            ftan_add=[]
+            nx_add=[]
+            ny_add=[]
+            for k in range(len(padd)):
+                self.I = np.append(self.I, self.bindices[labels[k]])
+                self.J = np.append(self.J, padd[k])
+                neii=np.nonzero(self.I[:self.ncon]==padd[k])[0]
+                neij=np.nonzero(self.J[:self.ncon]==padd[k])[0]
+
+                #Always add double bound
+                fullmobi_add.append(0)
+                
+                #Compute forces if neighbours are present
+                if (len(neii)>0 or len(neij)>0):
+                    # Flip direction of force, is this correct?
+                    nx0 = ny0 = -1
+
+                    # Compute force on this contact by force balance
+                    # Two minus signs on second part cancel out
+                    ftotx=np.sum(self.fnor[neii]*self.nx[neii]-self.ftan[neii]*self.ny[neii])-np.sum(self.fnor[neij]*self.nx[neij]-self.ftan[neij]*self.ny[neij])
+                    ftoty=np.sum(self.fnor[neii]*self.ny[neii]+self.ftan[neii]*self.nx[neii])-np.sum(self.fnor[neij]*self.ny[neij]+self.ftan[neij]*self.nx[neij])
+                    fnor0=ftotx*nx0+ftoty*ny0
+                    ftan0=ftotx*(-ny0)+ftoty*nx0
+
+                else: fnor0 = ftan0 = nx0 = ny0 = 1
+                
+                #Add data to list
+                fnor_add.append(fnor0)
+                ftan_add.append(ftan0)
+                nx_add.append(nx0)
+                ny_add.append(ny0)
+            
+            #Add slipping contact between the two boundary particles
+            self.I = np.append(self.I, self.bindices[0])
+            self.J = np.append(self.J, self.bindices[1])
+            fullmobi_add.append(1)
+
+            #Forces between boundary particles are zero?
+            fnor0 = ftan0 = nx0 = ny0 = 0
+
+            #Add to lists
+            fnor_add.append(fnor0)
+            ftan_add.append(ftan0)
+            nx_add.append(nx0)
+            ny_add.append(ny0)
+
+            # Finally stick it at the end of the existing data
+            self.x=np.concatenate((self.x,Boundaries[:,0]))
+            self.y=np.concatenate((self.y,Boundaries[:,1]))
+            self.rad=np.concatenate((self.rad,Boundaries[:,2]))
+            self.fnor=np.concatenate((self.fnor,np.array(fnor_add)))
+            self.ftan=np.concatenate((self.ftan,np.array(ftan_add)))
+            self.fullmobi=np.concatenate((self.fullmobi,np.array(fullmobi_add)))
+            self.nx=np.concatenate((self.nx,np.array(nx_add)))
+            self.ny=np.concatenate((self.ny,np.array(ny_add)))
+            self.ncon=len(self.I)
+            self.N+=2 #Since we have two boundary particles
+            print ("Added boundaries!")
+
+        #### ======================== Boundary integration =======================================================
+        def AddBoundaryContactsAnnulus2(self,threshold=30):
+            # For getting positions
+            self.addBoundaryAnnulus=True
+            
+            #Set radius of boundary particles
+            #This needs some tweaking, since we are working with innies instead of outies. 
+            Brad = self.texture
+            Brad = 300
+            
+            # Boundary positions:
+            # Coordinates of virtual boundary particles: at mid_x and y one Brad off from radi
+            b1 = self.mid_y + self.R1 - Brad #Inner
+            b2 = self.mid_y + self.R2 + Brad #Outer
+                        
+            # Coordinates of virtual boundary particles: in the middle, one Brad off from the edge of the outermost particle
+            Boundaries=np.zeros((2,3)) # Two boundary particles with their x,y and rad
+            Boundaries[0,:]=[self.mid_x,b1,Brad] #Inner
+            Boundaries[1,:]=[self.mid_x,b2,Brad] #Outer
+            
+            #Generate two new id's for boundary particles
+            self.bindices=[self.N, self.N +1]
+            padd=[]
+            labels=[]
+            
+            #If in contact with inner boundart
+            p1 =  np.nonzero(self.boundary == -1)[0]
+            padd.extend(p1)
+            labels.extend([0 for k in range(len(p1))])
+            #If in contact with outer boundary
+            p2 =  np.nonzero(self.boundary == 1)[0]
             padd.extend(p2)
             labels.extend([1 for k in range(len(p2))])
             

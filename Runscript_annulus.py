@@ -21,9 +21,7 @@ mu=0.3
 datatype = 'experiment_annulus'
 
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
-experiment_nums=['3']
-
-
+experiment_nums=['4']
 
 # Loop over experiment
 for experiment in experiment_nums:
@@ -38,18 +36,17 @@ for experiment in experiment_nums:
             continue
         
         
-        nsteps=1
+        #nsteps=1
         # Loop over strain steps for a given experiment
         # Start at 1 since steps start at 1. Ends at nsteps.
         for u in range(1, nsteps+1):
-                u = 1
                 #Creating configuration
                 ThisConf = CF.Configuration(topdir+experiment,datatype, mu, u)
                 #Reading in the data
-                ThisConf.ReadExpdataAnnulus(verbose=False)
+                ThisConf.ReadExpdataAnnulusNumpy(verbose=False)
                 #ThisConf.Tiling()
                 #Adding boundary contacts, passsing threshold argument is possible
-                #ThisConf.AddBoundaryContactsAnnulus()
+                ThisConf.AddBoundaryContactsAnnulus2()
                 
                 #Setting up and playing the pebble game
                 ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
@@ -116,4 +113,4 @@ for experiment in experiment_nums:
                 #    # D2_min, needs assessment
                 #    fig7 = ThisAnalysis.DisplacementCorrelateD2min(True) 
                 """
-                plt.show()                              
+                fig2.savefig(('step' + str(u) + '.png'))                             
