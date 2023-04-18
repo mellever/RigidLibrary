@@ -417,6 +417,11 @@ class Configuration:
                 self.ftan=np.array(ft0)
                 self.fullmobi=np.array(fm0)
                 
+                i = 0
+                print(self.id[self.I[i]], self.x[self.I[i]], self.y[self.I[i]])
+                print(self.id[self.J[i]], self.x[self.J[i]], self.y[self.J[i]])
+                print('d =', np.sqrt((self.x[self.I[i]]- self.x[self.J[i]])**2 + (self.y[self.I[i]]- self.y[self.J[i]])**2))
+                
                 self.nx=np.zeros(self.ncon)
                 self.ny=np.zeros(self.ncon)
                 for k in range(self.ncon):
@@ -710,7 +715,7 @@ class Configuration:
             print ("Added boundaries!")
         
         #### ======================== Boundary integration =======================================================
-        def AddBoundaryContactsAnnulus(self,threshold=30):
+        def AddBoundaryContactsAnnulus2(self,threshold=30):
             # For getting positions
             self.addBoundaryAnnulus=True
 
@@ -805,7 +810,7 @@ class Configuration:
             print ("Added boundaries!")
 
         #### ======================== Boundary integration =======================================================
-        def AddBoundaryContactsAnnulus2(self,threshold=30):
+        def AddBoundaryContactsAnnulus(self):
             # For getting positions
             self.addBoundaryAnnulus=True
             

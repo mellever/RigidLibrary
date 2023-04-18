@@ -18,10 +18,11 @@ import Configuration as CF
 import Pebbles as PB
 import Hessian as HS
 import Analysis as AN
+import Tiling as TY
 
 # ========================= Sample execution script. Will be removed in bulk version. ===========
-foldername = '/home/melle/Documents/Code/Simulation_Data/conf1_N64_mu10_phi803/'
-outfolder = '/home/melle/Documents/Code/Simulation_Data/conf1_N64_mu10_phi803/'
+foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi803/'
+outfolder = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi803/'
 
 if not os.path.exists(outfolder):
     os.makedirs(outfolder)
@@ -39,9 +40,10 @@ random_read[3, :] = [0, 0, 0.8]
 random_read[4, :] = [0.8, 0, 0]
 
 # stepping range
-start = 0
+# starts at 0 and ends at 2000 with timesteps of 1
+start = 250
 stop = 2000
-step = 500
+step = 1
 
 #dummy= plt.figure(figsize=(15,7.5))
 # dummy, (ax1, ax2) = plt.subplots(nrows=1,ncols1,figsize=(15,7.5))
@@ -57,8 +59,15 @@ for k in range(start, stop, step):
     #dummy, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(30, 15))
 
     #Read sim data
-    ThisConf.readSimdata(k, True)
+    ThisConf.readSimdata(k, False)
     
+    #Apply Maxwell cremona tiling
+    ThisTiling = TY.Tiling(ThisConf)
+    #ThisTiling.graph()
+    ThisTiling.tile()
+
+    
+    """
     ########## Setting up and playing the pebble game
     ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
     
@@ -87,3 +96,4 @@ for k in range(start, stop, step):
     fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
 
 plt.show()
+"""

@@ -76,9 +76,24 @@ for experiment in experiment_nums:
                         #fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
                         #def plotPebbles(self,plotCir,plotPeb,plotPebCon,plotClus,plotOver,**kwargs):
                         #ThisAnalysis.plotPebbles(True,True,True,False,False)
+                        #Plot pebbles has the following arguments: plotCir,plotPeb,plotPebCon,plotClus,plotOver
                         fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
                         
                         
+                        #some stuff for plotting
+                        fig3 = ThisAnalysis.plotPebbles(True,False,True,False,False)
+                        plt.xlim(400,800)
+                        plt.ylim(700,1100)
+                        fig4 = ThisAnalysis.plotPebbles(True,False,False,False,False)
+                        plt.xlim(400,800)
+                        plt.ylim(700,1100)
+                        fig5 = ThisAnalysis.plotPebbles(True,True,False,True,False)
+                        plt.xlim(400,800)
+                        plt.ylim(700,1100)
+                        #fig4 = ThisAnalysis.plotPebbles(True,True,False,True,False)
+                        
+                        
+                        """
                         ######### continuing with the Hessian now 
                         # constructing the matrix
                         #  makeHessian(self,frictional,recomputeFnor,stabilise,verbose=False):
@@ -109,6 +124,6 @@ for experiment in experiment_nums:
                         #    print (P_disp_if_pebble,P_pebble_if_disp)
                         #    # D2_min, needs assessment
                         #    fig7 = ThisAnalysis.DisplacementCorrelateD2min(True)
-                                              
+                        """                      
                         
 plt.show()       

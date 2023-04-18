@@ -46,7 +46,7 @@ for experiment in experiment_nums:
                 ThisConf.ReadExpdataAnnulusNumpy(verbose=False)
                 #ThisConf.Tiling()
                 #Adding boundary contacts, passsing threshold argument is possible
-                ThisConf.AddBoundaryContactsAnnulus2()
+                ThisConf.AddBoundaryContactsAnnulus()
                 
                 #Setting up and playing the pebble game
                 ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
@@ -113,4 +113,6 @@ for experiment in experiment_nums:
                 #    # D2_min, needs assessment
                 #    fig7 = ThisAnalysis.DisplacementCorrelateD2min(True) 
                 """
-                fig2.savefig(('step' + str(u) + '.png'))                             
+                #fig2.savefig(('step' + str(u) + '.pdf'))  
+                plt.show()
+                                           
