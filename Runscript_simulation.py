@@ -21,8 +21,8 @@ import Analysis as AN
 import Tiling as TY
 
 # ========================= Sample execution script. Will be removed in bulk version. ===========
-foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi803/'
-outfolder = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi803/'
+foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
+outfolder = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
 
 if not os.path.exists(outfolder):
     os.makedirs(outfolder)
@@ -41,7 +41,7 @@ random_read[4, :] = [0.8, 0, 0]
 
 # stepping range
 # starts at 0 and ends at 2000 with timesteps of 1
-start = 250
+start = 1999
 stop = 2000
 step = 1
 
@@ -54,16 +54,12 @@ clusterall2 = [[] for _ in range(int((stop-start)/step+1))]
 ThisConf = CF.Configuration(foldername,'simulation', mu, step)
 
 for k in range(start, stop, step):
-    print(k)
-
-    #dummy, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(30, 15))
-
     #Read sim data
     ThisConf.readSimdata(k, False)
     
     #Apply Maxwell cremona tiling
     ThisTiling = TY.Tiling(ThisConf)
-    #ThisTiling.graph()
+    ThisTiling.graph(True)
     ThisTiling.tile()
 
     
