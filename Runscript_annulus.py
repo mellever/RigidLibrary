@@ -36,17 +36,24 @@ for experiment in experiment_nums:
             continue
         
         
-        #nsteps=1
+        nsteps=1
         # Loop over strain steps for a given experiment
         # Start at 1 since steps start at 1. Ends at nsteps.
         for u in range(1, nsteps+1):
                 #Creating configuration
                 ThisConf = CF.Configuration(topdir+experiment,datatype, mu, u)
+                
                 #Reading in the data
                 ThisConf.ReadExpdataAnnulusNumpy(verbose=False)
-                #ThisConf.Tiling()
+
                 #Adding boundary contacts, passsing threshold argument is possible
                 ThisConf.AddBoundaryContactsAnnulus()
+                
+                #Adding random contacts
+                #ThisConf.AddRandomContacts(percent=50, dmax=200)
+                
+                #Adding smart contacts
+                ThisConf.AddSmartContacts(dmax=500, ang=np.pi/2)
                 
                 #Setting up and playing the pebble game
                 ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)

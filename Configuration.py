@@ -349,7 +349,6 @@ class Configuration:
                     self.rad=1 # purely so that we can divide by it ...
                     self.N=0
                     print("Error: there is no position data here")
-                
                 #Load in contact data
                 prefix = self.folder +'/Adjacency_list.txt'
                 try:
@@ -417,11 +416,6 @@ class Configuration:
                 self.ftan=np.array(ft0)
                 self.fullmobi=np.array(fm0)
                 
-                i = 0
-                print(self.id[self.I[i]], self.x[self.I[i]], self.y[self.I[i]])
-                print(self.id[self.J[i]], self.x[self.J[i]], self.y[self.J[i]])
-                print('d =', np.sqrt((self.x[self.I[i]]- self.x[self.J[i]])**2 + (self.y[self.I[i]]- self.y[self.J[i]])**2))
-                
                 self.nx=np.zeros(self.ncon)
                 self.ny=np.zeros(self.ncon)
                 for k in range(self.ncon):
@@ -432,7 +426,7 @@ class Configuration:
                         rij=np.sqrt((x1-x2)**2+(y1-y2)**2)
                         self.nx[k]=(x2-x1)/rij
                         self.ny[k]=(y2-y1)/rij
-                
+
                 print("Config frame #" +str(self.step)+ " created")      
                 return 0
         
@@ -895,6 +889,7 @@ class Configuration:
             # Finally stick it at the end of the existing data
             self.x=np.concatenate((self.x,Boundaries[:,0]))
             self.y=np.concatenate((self.y,Boundaries[:,1]))
+            self.id=np.concatenate((self.id, self.bindices))
             self.rad=np.concatenate((self.rad,Boundaries[:,2]))
             self.fnor=np.concatenate((self.fnor,np.array(fnor_add)))
             self.ftan=np.concatenate((self.ftan,np.array(ftan_add)))
@@ -904,6 +899,184 @@ class Configuration:
             self.ncon=len(self.I)
             self.N+=2 #Since we have two boundary particles
             print ("Added boundaries!")
+
+        def AddRandomContacts(self, percent, dmax):         
+            #Create empty lists for storing data
+            fullmobi_add=[]
+            fnor_add=[]
+            ftan_add=[]
+            nx_add=[]
+            ny_add=[]
+            
+            #Choose amount of particles random number in [1,100]
+            nums = np.random.randint(1,100,len(self.x))
+
+            #Loop over all particles
+            for i in range(len(self.x)):
+                #If number less than percent add bond, else continue
+                if nums[i] >= percent: continue 
+                
+                #Loop over contacts in proximity
+                for n in range(1,7):
+                    skip = False
+                    #Compute distance between particles
+                    diffarr = np.sqrt(np.square(self.x-self.x[i])+np.square(self.y-self.y[i]))
+                    #Take n'th smallest distance
+                    diff = np.sort(diffarr)[n]
+                    if diff >= dmax:
+                        skip = True
+                        break 
+                    #Find corresponding index
+                    arg = np.argwhere(diffarr == diff).flatten()[0] 
+                    
+                    #Only add new bonds
+                    if arg in self.J[np.argwhere(self.I == i)].flatten():
+                        skip = True
+                        continue
+                    if arg in self.I[np.argwhere(self.J == i)].flatten():
+                        skip = True
+                        continue
+                
+                #If distance is to large, do not add
+                if skip:
+                    continue
+                
+                #Append to contacts
+                self.I = np.append(self.I, i)
+                self.J = np.append(self.J, arg)
+                neii=np.nonzero(self.I[:self.ncon]==arg)[0]
+                neij=np.nonzero(self.J[:self.ncon]==arg)[0]
+
+                #Always add double bound
+                fullmobi_add.append(0)
+                
+                #Compute forces if neighbours are present
+                if (len(neii)>0 or len(neij)>0):
+                    # Flip direction of force, is this correct?
+                    nx0 = ny0 = -1
+
+                    # Compute force on this contact by force balance
+                    # Two minus signs on second part cancel out
+                    ftotx=np.sum(self.fnor[neii]*self.nx[neii]-self.ftan[neii]*self.ny[neii])-np.sum(self.fnor[neij]*self.nx[neij]-self.ftan[neij]*self.ny[neij])
+                    ftoty=np.sum(self.fnor[neii]*self.ny[neii]+self.ftan[neii]*self.nx[neii])-np.sum(self.fnor[neij]*self.ny[neij]+self.ftan[neij]*self.nx[neij])
+                    fnor0=ftotx*nx0+ftoty*ny0
+                    ftan0=ftotx*(-ny0)+ftoty*nx0
+
+                else: fnor0 = ftan0 = nx0 = ny0 = 1
+                #Add data to list
+                fnor_add.append(fnor0)
+                ftan_add.append(ftan0)
+                nx_add.append(nx0)
+                ny_add.append(ny0)
+            
+            #Add everything to existing arrays
+            self.fnor=np.concatenate((self.fnor,np.array(fnor_add)))
+            self.ftan=np.concatenate((self.ftan,np.array(ftan_add)))
+            self.fullmobi=np.concatenate((self.fullmobi,np.array(fullmobi_add)))
+            self.nx=np.concatenate((self.nx,np.array(nx_add)))
+            self.ny=np.concatenate((self.ny,np.array(ny_add)))
+            self.ncon=len(self.I)
+            print("Added Random Bonds")
+                
+
+        def AddSmartContacts(self,dmax,ang):         
+            #Create empty lists for storing data
+            fullmobi_add=[]
+            fnor_add=[]
+            ftan_add=[]
+            nx_add=[]
+            ny_add=[]
+
+            #Loop over all particles
+            for i in self.I:
+                #Check if particle has only 1 contact
+                con = len(self.I[self.I==i])+len(self.J[self.J==i])
+                if con>1: continue
+                
+                #Extract this contact from the data
+                if len(self.I[self.I==i])==1:
+                    j = self.J[np.argwhere(self.I == i)].flatten()[0]
+                else:
+                    j = self.I[np.argwhere(self.J == i)].flatten()[0]
+                
+                #Compute angle of bond between particles
+                theta = np.arctan2(self.y[j] - self.y[i], self.x[j] - self.x[i])
+                
+                #Connect particle to particle with angle theta+pi within a reasonable distance
+                theta += np.pi
+                theta = theta%(2*np.pi)
+                
+                #Loop over contacts in proximity
+                for n in range(1,7):
+                    skip = False
+                    #Compute distance between particles
+                    diffarr = np.sqrt(np.square(self.x-self.x[i])+np.square(self.y-self.y[i]))
+                    #Take n'th smallest distance
+                    diff = np.sort(diffarr)[n]
+                    if diff >= dmax:
+                        skip = True
+                        break
+                    
+                    #Find corresponding index
+                    arg = np.argwhere(diffarr == diff).flatten()[0] 
+                    
+                    #Compute angle
+                    phi = np.arctan2(self.y[arg] - self.y[i], self.x[arg] - self.x[i])
+                    #Only add bonds within angle threshold
+                    if phi < theta-ang or phi > theta+ang:
+                        skip = True
+                        continue 
+                    
+                    #Only add new bonds
+                    if arg in self.J[np.argwhere(self.I == i)].flatten():
+                        skip = True
+                        continue
+                    if arg in self.I[np.argwhere(self.J == i)].flatten():
+                        skip = True
+                        continue
+                
+                #If distance is to large or angle not within threshold, do not add
+                if skip:
+                    continue
+                
+                #Append to contacts
+                self.I = np.append(self.I, i)
+                self.J = np.append(self.J, arg)
+                neii=np.nonzero(self.I[:self.ncon]==arg)[0]
+                neij=np.nonzero(self.J[:self.ncon]==arg)[0]
+
+                #Always add double bound
+                fullmobi_add.append(0)
+                
+                #Compute forces if neighbours are present
+                if (len(neii)>0 or len(neij)>0):
+                    # Flip direction of force, is this correct?
+                    nx0 = ny0 = -1
+
+                    # Compute force on this contact by force balance
+                    # Two minus signs on second part cancel out
+                    ftotx=np.sum(self.fnor[neii]*self.nx[neii]-self.ftan[neii]*self.ny[neii])-np.sum(self.fnor[neij]*self.nx[neij]-self.ftan[neij]*self.ny[neij])
+                    ftoty=np.sum(self.fnor[neii]*self.ny[neii]+self.ftan[neii]*self.nx[neii])-np.sum(self.fnor[neij]*self.ny[neij]+self.ftan[neij]*self.nx[neij])
+                    fnor0=ftotx*nx0+ftoty*ny0
+                    ftan0=ftotx*(-ny0)+ftoty*nx0
+
+                else: fnor0 = ftan0 = nx0 = ny0 = 1
+                #Add data to list
+                fnor_add.append(fnor0)
+                ftan_add.append(ftan0)
+                nx_add.append(nx0)
+                ny_add.append(ny0)
+            
+            #Add everything to existing arrays
+            self.fnor=np.concatenate((self.fnor,np.array(fnor_add)))
+            self.ftan=np.concatenate((self.ftan,np.array(ftan_add)))
+            self.fullmobi=np.concatenate((self.fullmobi,np.array(fullmobi_add)))
+            self.nx=np.concatenate((self.nx,np.array(nx_add)))
+            self.ny=np.concatenate((self.ny,np.array(ny_add)))
+            self.ncon=len(self.I)
+            print("Added Smart Bonds")               
+                    
+            
 
         def AddNextBoundaryContacts(self,threshold=15,Brad=20.0):
             # Threshold to check if a particle is close enough to walls.
