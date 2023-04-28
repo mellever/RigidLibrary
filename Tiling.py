@@ -44,13 +44,13 @@ class Tiling:
             orr[k, 2] = yor
             fx = data[k,2]
             fy = data[k,3]
-            plt.arrow(xor, yor, fx, fy, color=color, alpha=0.5)
-            #plt.plot([xor, xor+fx], [yor, yor+fy], color=color, marker='o')
+            #plt.arrow(xor, yor, fx, fy, color=color, alpha=0.5)
+            plt.plot([xor, xor+fx], [yor, yor+fy], color=color, marker='o')
             xor+=fx
             yor+=fy
         return orr
     
-    def contact(self, i, flip):
+    def contact(self, i, flip, phi):
         #Determine indices of contacts and put together in one array
         argI = np.argwhere(self.J==i).flatten()
         argJ = np.argwhere(self.I==i).flatten()
@@ -61,15 +61,18 @@ class Tiling:
         con = np.concatenate([I,J])
     
         #Force data we want to extract
-        data=np.zeros((len(arg),4))
+        data=np.zeros((len(arg),5))
         
         #Loop over all contacts 
         for k in range(len(arg)):
             #Add particle number
             data[k,0] = con[k]
             
+            #Add contact
+            data[k,4] = i
+            
             #Compute angle between particles
-            theta = np.arccos(self.nx[arg[k]])
+            theta = (np.arccos(self.nx[arg[k]])-phi)%(2*np.pi)
             
             #Compute components of forces
             fx=self.fn[arg[k]]*self.nx[arg[k]]+self.ft[arg[k]]*self.ny[arg[k]]
@@ -77,7 +80,6 @@ class Tiling:
             if con[k] in J:
                 fx=-fx
                 fy=-fy
-                
      
             #Add to array
             data[k,2] = fx
@@ -88,7 +90,7 @@ class Tiling:
         data = data[data[:, 1].argsort()]
         
         #If in con2 flip the data
-        #if flip: data = np.flipud(data)
+        if flip: data = np.flipud(data)
         
         return arg, con, data
     
@@ -100,6 +102,7 @@ class Tiling:
         else:
             #Initial values      
             xor = yor = 0
+            phi = 0
             a = True
             flip = True
             checklist = np.unique(np.union1d(self.I, self.J))
@@ -116,7 +119,6 @@ class Tiling:
                         if i in checklist:
                             break
                         if n == len(contactlist)-1: i=checklist[0]
-                
                 #Remove contact from the checklist
                 checklist = checklist[checklist != i]
                 
@@ -125,12 +127,12 @@ class Tiling:
                 b = True
                 
                 #Get contact data and force data for contact i
-                arg1, con1, data1 = self.contact(i, False)
-                print(data1)
+                arg1, con1, data1 = self.contact(i, flip=False, phi=0)
+                print('data1= ',data1)
                 
                 #Plot and get force vector data
-                orr = self.plotter(data1, xor, yor, color='black')
-                print(orr)
+                orr1 = self.plotter(data1, xor, yor, color='black')
+                print('orr1= ',orr1)
                 
                 #Create empty list for all contacts of contacts
                 contactlist = []
@@ -140,27 +142,35 @@ class Tiling:
                     #Generate colors for each tile
                     colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(con1))]
                     
+                    #Extract angle to rotate plotting
+                    phi = data1[data1[:,0]==con1[k]].flatten()[1]
+                    print('phi=', phi)
+                    
                     #Get contact data
-                    arg2, con2, data2 = self.contact(con1[k], flip=True)
+                    arg2, con2, data2 = self.contact(con1[k], flip=False, phi=phi)
                     
                     #Create list of all the contacts of the contacts
                     contactlist.extend(con2.tolist())
                     contactlist = [*set(contactlist)] #remove duplicates
                     
                     #Get origin coordinates
-                    xor = orr[orr[:,0]==con1[k]][0][1]
-                    yor = orr[orr[:,0]==con1[k]][0][2]
+                    x = np.argwhere(orr1==con1[k]).flatten()[0]
+                    n = (x+1)%len(con1)
+                    xor = orr1[n,1]
+                    yor = orr1[n,2]
                     print(i, con1, con1[k], con2, xor, yor)
                     
-                    self.plotter(data1, 0, 0, color='black')
-                    self.plotter(data2, xor, yor, color=colors[k])
+                    #self.plotter(data1, 0, 0, color='black')
+                    orr2 = self.plotter(data2, xor, yor, color=colors[k])
+                    if k==0: orr = orr2
+                    else: orr = np.concatenate((orr,orr2))
                     checklist = checklist[checklist != con1[k]]
                     k+=1
                     if k >= len(con1):
                         b = False
                         l += 1
-                    plt.show()
-                #plt.show()
+                    #plt.show()
+                plt.show()
     
     
 
