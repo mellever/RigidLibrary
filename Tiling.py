@@ -101,7 +101,7 @@ class Tiling:
             print('no data')
         else:
             #Initial values      
-            xor = yor = 0
+            xor1 = yor1 = 0
             phi = 0
             a = True
             flip = True
@@ -111,7 +111,6 @@ class Tiling:
             
             #Loop over all particles that have contacts
             while a:
-                xor = yor = 0
                 if len(checklist) == 0: break #if we have checked all contacts then exit
                 if l >= 1: #If we are not in the first iteration check over all contacts
                     for n in range(len(contactlist)):
@@ -119,6 +118,29 @@ class Tiling:
                         if i in checklist:
                             break
                         if n == len(contactlist)-1: i=checklist[0]
+                    
+                    print(i)
+                    for n in range(len(data)):
+                        arr = data[n]
+                        x = np.argwhere(arr==i)
+                        if len(x) != 0:
+                            phi = arr[x].flatten()[1]
+                            break
+                    
+                    print('phi=', phi)
+                    print('data= ', data)
+                    
+                    for n in range(len(orr)):
+                        arr = orr[n]
+                        if i in arr:
+                            x = np.argwhere(arr==i).flatten()[0]
+                            n = (x+1)%len(arr)
+                            xor1 = arr[n,1]
+                            yor1 = arr[n,2]
+                            break
+                    print(xor1, yor1)
+                    print('orr= ', orr)
+
                 #Remove contact from the checklist
                 checklist = checklist[checklist != i]
                 
@@ -127,15 +149,19 @@ class Tiling:
                 b = True
                 
                 #Get contact data and force data for contact i
-                arg1, con1, data1 = self.contact(i, flip=False, phi=0)
+                arg1, con1, data1 = self.contact(i, flip=False, phi=phi)
                 print('data1= ',data1)
                 
                 #Plot and get force vector data
-                orr1 = self.plotter(data1, xor, yor, color='black')
+                orr1 = self.plotter(data1, xor1, yor1, color='black')
                 print('orr1= ',orr1)
                 
                 #Create empty list for all contacts of contacts
                 contactlist = []
+                
+                #Create lists to store data
+                data = []
+                orr = []
                 
                 #Loop over all contacts
                 while b:
@@ -149,6 +175,9 @@ class Tiling:
                     #Get contact data
                     arg2, con2, data2 = self.contact(con1[k], flip=False, phi=phi)
                     
+                    #Save data
+                    data.append(data2)
+                    
                     #Create list of all the contacts of the contacts
                     contactlist.extend(con2.tolist())
                     contactlist = [*set(contactlist)] #remove duplicates
@@ -156,21 +185,23 @@ class Tiling:
                     #Get origin coordinates
                     x = np.argwhere(orr1==con1[k]).flatten()[0]
                     n = (x+1)%len(con1)
-                    xor = orr1[n,1]
-                    yor = orr1[n,2]
-                    print(i, con1, con1[k], con2, xor, yor)
+                    xor2 = orr1[n,1]
+                    yor2 = orr1[n,2]
+                    print(i, con1, con1[k], con2, xor2, yor2)
                     
-                    #self.plotter(data1, 0, 0, color='black')
-                    orr2 = self.plotter(data2, xor, yor, color=colors[k])
-                    if k==0: orr = orr2
-                    else: orr = np.concatenate((orr,orr2))
+                    self.plotter(data1, xor1, xor1, color='black')
+                    orr2 = self.plotter(data2, xor2, yor2, color=colors[k])
+                    
+                    #Save data
+                    orr.append(orr2)
+
                     checklist = checklist[checklist != con1[k]]
                     k+=1
                     if k >= len(con1):
                         b = False
                         l += 1
-                    #plt.show()
-                plt.show()
+                    plt.show()
+                #plt.show()
     
     
 
