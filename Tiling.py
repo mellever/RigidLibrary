@@ -44,7 +44,7 @@ class Tiling:
             orr[k, 2] = yor
             fx = data[k,2]
             fy = data[k,3]
-            #plt.arrow(xor, yor, fx, fy, color=color, alpha=0.5)
+            #plt.arrow(xor, yor, fx, fy, color=color)
             plt.plot([xor, xor+fx], [yor, yor+fy], color=color, marker='o')
             xor+=fx
             yor+=fy
@@ -102,7 +102,7 @@ class Tiling:
         else:
             #Initial values      
             xor1 = yor1 = 0
-            phi = 0
+            phi1 = 0
             a = True
             flip = True
             checklist = np.unique(np.union1d(self.I, self.J))
@@ -119,17 +119,22 @@ class Tiling:
                             break
                         if n == len(contactlist)-1: i=checklist[0]
                     
-                    print(i)
+                    #Retrieve previous contact to get correct origin position
+                    for n in range(len(con)):
+                        arr = con[n]
+                        if i in arr[1]:
+                            contact = con[0]
+                    
+                    #Retrieve new angle from previous tiles
                     for n in range(len(data)):
                         arr = data[n]
+                        contacts = con[n]
                         x = np.argwhere(arr==i)
-                        if len(x) != 0:
-                            phi = arr[x].flatten()[1]
+                        if len(x) != 0 and arr[x].flatten()[-1]==contact:
+                            phi1 = arr[x].flatten()[1]
                             break
                     
-                    print('phi=', phi)
-                    print('data= ', data)
-                    
+                    #Retrieve starting position from previous tiles
                     for n in range(len(orr)):
                         arr = orr[n]
                         if i in arr:
@@ -138,8 +143,6 @@ class Tiling:
                             xor1 = arr[n,1]
                             yor1 = arr[n,2]
                             break
-                    print(xor1, yor1)
-                    print('orr= ', orr)
 
                 #Remove contact from the checklist
                 checklist = checklist[checklist != i]
@@ -149,19 +152,18 @@ class Tiling:
                 b = True
                 
                 #Get contact data and force data for contact i
-                arg1, con1, data1 = self.contact(i, flip=False, phi=phi)
-                print('data1= ',data1)
+                arg1, con1, data1 = self.contact(i, flip=False, phi=phi1)
                 
                 #Plot and get force vector data
                 orr1 = self.plotter(data1, xor1, yor1, color='black')
-                print('orr1= ',orr1)
                 
                 #Create empty list for all contacts of contacts
                 contactlist = []
                 
-                #Create lists to store data
+                #Create lists to store data from which origin and angle can be recovered
                 data = []
                 orr = []
+                con = []
                 
                 #Loop over all contacts
                 while b:
@@ -169,14 +171,11 @@ class Tiling:
                     colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(con1))]
                     
                     #Extract angle to rotate plotting
-                    phi = data1[data1[:,0]==con1[k]].flatten()[1]
-                    print('phi=', phi)
+                    phi2 = data1[data1[:,0]==con1[k]].flatten()[1] + phi1
+                    if phi2> 2*np.pi: print('phi2', phi2, phi1, phi2-phi1)
                     
                     #Get contact data
-                    arg2, con2, data2 = self.contact(con1[k], flip=False, phi=phi)
-                    
-                    #Save data
-                    data.append(data2)
+                    arg2, con2, data2 = self.contact(con1[k], flip=False, phi=phi2)
                     
                     #Create list of all the contacts of the contacts
                     contactlist.extend(con2.tolist())
@@ -187,21 +186,23 @@ class Tiling:
                     n = (x+1)%len(con1)
                     xor2 = orr1[n,1]
                     yor2 = orr1[n,2]
-                    print(i, con1, con1[k], con2, xor2, yor2)
+                    #print(i, con1, con1[k], con2, xor2, yor2)
                     
-                    self.plotter(data1, xor1, xor1, color='black')
+                    #self.plotter(data1, xor1, yor1, color='black', alpha=0.5)
                     orr2 = self.plotter(data2, xor2, yor2, color=colors[k])
                     
                     #Save data
+                    con.append([con1[k],con2])
                     orr.append(orr2)
+                    data.append(data2)
 
                     checklist = checklist[checklist != con1[k]]
                     k+=1
                     if k >= len(con1):
                         b = False
                         l += 1
-                    plt.show()
-                #plt.show()
+                plt.show()
+            
     
     
 
