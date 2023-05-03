@@ -979,93 +979,74 @@ class Configuration:
             print("Added Random Bonds")
                 
 
-        def AddSmartContacts(self,dmax,ang):         
+        def AddSmartContacts(self,dmax,ang, threshold):         
             #Create empty lists for storing data
             fullmobi_add=[]
             fnor_add=[]
             ftan_add=[]
             nx_add=[]
             ny_add=[]
-
+                    
             #Loop over all particles
             for i in self.I:
-                #Check if particle has only 1 contact
-                con = len(self.I[self.I==i])+len(self.J[self.J==i])
-                if con>1: continue
+                #Determine indices of contacts and put together in one array
+                argI = np.argwhere(self.I==i).flatten()
+                argJ = np.argwhere(self.J==i).flatten()
+                arg = np.concatenate([argI,argJ])
+                #Get particle ids from indices and put together in one array
+                I = self.I[argI]
+                J = self.J[argJ]
+                con = np.concatenate([I,J])
                 
-                #Extract this contact from the data
-                if len(self.I[self.I==i])==1:
-                    j = self.J[np.argwhere(self.I == i)].flatten()[0]
-                else:
-                    j = self.I[np.argwhere(self.J == i)].flatten()[0]
+                #Define starting values forces
+                fx = fy = 0
                 
-                #Compute angle of bond between particles
-                theta = np.arctan2(self.y[j] - self.y[i], self.x[j] - self.x[i])
+                #Loop over all contacts and compute total force
+                for k in con:
+                    #if k != k%self.ncon: print('warning')
+                    k = int(k%len(self.fnor))
+                                
+                    #Compute components of forces
+                    if k in J:
+                        fx-=self.fnor[k]*self.nx[k]+self.ftan[k]*self.ny[k]
+                        fy-=self.fnor[k]*self.ny[k]-self.ftan[k]*self.nx[k]
+                    else:
+                        fx+=self.fnor[k]*self.nx[k]+self.ftan[k]*self.ny[k]
+                        fy+=self.fnor[k]*self.ny[k]-self.ftan[k]*self.nx[k]
                 
-                #Connect particle to particle with angle theta+pi within a reasonable distance
-                theta += np.pi
-                theta = theta%(2*np.pi)
-                
-                #Loop over contacts in proximity
-                for n in range(1,7):
-                    skip = False
-                    #Compute distance between particles
-                    diffarr = np.sqrt(np.square(self.x-self.x[i])+np.square(self.y-self.y[i]))
-                    #Take n'th smallest distance
-                    diff = np.sort(diffarr)[n]
-                    if diff >= dmax:
-                        skip = True
-                        break
-                    
-                    #Find corresponding index
-                    arg = np.argwhere(diffarr == diff).flatten()[0] 
-                    
-                    #Compute angle
-                    phi = np.arctan2(self.y[arg] - self.y[i], self.x[arg] - self.x[i])
-                    #Only add bonds within angle threshold
-                    if phi < theta-ang or phi > theta+ang:
-                        skip = True
-                        continue 
-                    
-                    #Only add new bonds
-                    if arg in self.J[np.argwhere(self.I == i)].flatten():
-                        skip = True
-                        continue
-                    if arg in self.I[np.argwhere(self.J == i)].flatten():
-                        skip = True
-                        continue
-                
-                #If distance is to large or angle not within threshold, do not add
-                if skip:
-                    continue
-                
-                #Append to contacts
-                self.I = np.append(self.I, i)
-                self.J = np.append(self.J, arg)
-                neii=np.nonzero(self.I[:self.ncon]==arg)[0]
-                neij=np.nonzero(self.J[:self.ncon]==arg)[0]
+                ftot = np.sqrt(np.square(fx)+ np.square(fy))
 
-                #Always add double bound
-                fullmobi_add.append(0)
                 
-                #Compute forces if neighbours are present
-                if (len(neii)>0 or len(neij)>0):
-                    # Flip direction of force, is this correct?
-                    nx0 = ny0 = -1
+                if ftot > threshold:                  
+                    #Compute angle needed for new contact
+                    theta = (np.tan(fy/fx) + np.pi)%(2*np.pi)
+                    angles = np.arctan2(self.x - self.x[i], self.y-self.y[i])
+                    for k in range(len(angles)):
+                        if angles[k] > theta + ang or angles[k] < theta - ang:
+                            continue
+                        if np.sqrt(np.square(self.x[k])+ np.square(self.y[k])) < dmax:
+                            print("adding smart bond")
+                            #Find correct index
+                            j = int(self.id[k])
+                            #Append to contacts
+                            self.I = np.append(self.I, i)
+                            self.J = np.append(self.J, j)
 
-                    # Compute force on this contact by force balance
-                    # Two minus signs on second part cancel out
-                    ftotx=np.sum(self.fnor[neii]*self.nx[neii]-self.ftan[neii]*self.ny[neii])-np.sum(self.fnor[neij]*self.nx[neij]-self.ftan[neij]*self.ny[neij])
-                    ftoty=np.sum(self.fnor[neii]*self.ny[neii]+self.ftan[neii]*self.nx[neii])-np.sum(self.fnor[neij]*self.ny[neij]+self.ftan[neij]*self.nx[neij])
-                    fnor0=ftotx*nx0+ftoty*ny0
-                    ftan0=ftotx*(-ny0)+ftoty*nx0
-
-                else: fnor0 = ftan0 = nx0 = ny0 = 1
-                #Add data to list
-                fnor_add.append(fnor0)
-                ftan_add.append(ftan0)
-                nx_add.append(nx0)
-                ny_add.append(ny0)
+                            #Always add double bound
+                            fullmobi_add.append(0)
+                            
+                            #Compute forces, this needs to be changed.
+                            fnor0 = 1
+                            ftan0 = 1
+                            nx0 = 1
+                            ny0 = 1
+                            
+                            #Add data to list
+                            fnor_add.append(fnor0)
+                            ftan_add.append(ftan0)
+                            nx_add.append(nx0)
+                            ny_add.append(ny0)
+                
             
             #Add everything to existing arrays
             self.fnor=np.concatenate((self.fnor,np.array(fnor_add)))

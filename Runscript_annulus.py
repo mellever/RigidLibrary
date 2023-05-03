@@ -46,14 +46,15 @@ for experiment in experiment_nums:
                 #Reading in the data
                 ThisConf.ReadExpdataAnnulusNumpy(verbose=False)
 
+                #Adding smart contacts
+                ThisConf.AddSmartContacts(dmax=1000, ang=4*np.pi, threshold=0.0001)
+                
                 #Adding boundary contacts, passsing threshold argument is possible
                 ThisConf.AddBoundaryContactsAnnulus()
                 
                 #Adding random contacts
                 #ThisConf.AddRandomContacts(percent=50, dmax=200)
-                
-                #Adding smart contacts
-                ThisConf.AddSmartContacts(dmax=500, ang=np.pi/2)
+
                 
                 #Setting up and playing the pebble game
                 ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
