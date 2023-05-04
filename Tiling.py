@@ -81,17 +81,27 @@ class Tiling:
             #Add contact
             data[k,4] = i
             
-            #Compute angle between particles
-            theta = (np.arccos(self.nx[arg[k]])-phi)%(2*np.pi)
-            
-            #Compute components of forces
-            fx=self.fn[arg[k]]*self.nx[arg[k]]+self.ft[arg[k]]*self.ny[arg[k]]
-            fy=self.fn[arg[k]]*self.ny[arg[k]]-self.ft[arg[k]]*self.nx[arg[k]]
+            #Directions and forces
+            nx = self.nx[arg[k]]
+            ny = self.ny[arg[k]]
+            fn = self.fn[arg[k]]
+            ft = self.ft[arg[k]]
             
             #Make sure that contacts have equal but opposite forces
-            if con[k] in J:
-                fx=-fx
-                fy=-fy
+            if con[k] in I:
+                nx = -nx
+                ny = -ny
+            
+            #Compute angle between particles
+            theta = np.arctan2(ny, nx) #%(2*np.pi)
+            if theta < 0: 
+                theta+=2*np.pi
+            
+            theta = (theta -phi)%(2*np.pi)
+            
+            #Compute components of forces
+            fx=fn*nx+ft*ny
+            fy=fn*ny-ft*nx
      
             #Add to array
             data[k,2] = fx
@@ -123,67 +133,49 @@ class Tiling:
             
             #Loop over all particles that have contacts
             while a:
-                if len(checklist) == 0: break #if we have checked all contacts then exit
+                if len(checklist) == 0 or l==100: break #if we have checked all contacts then exit
                 if l >= 1: #If we are not in the first iteration check over all contacts
                     #Retrieve new contacts from the contactlist
+                    """
+                    if len(contactlist)==0: 
+                        i=checklist[0]
+                        print("warning")
+                    else:
+                    """
                     for n in range(len(contactlist)):
                         i = contactlist[n]
-                        if priority:
-                            if i==inew: 
-                                priority = False
-                                plot = True
-                                break #If we found the priority contact break out of the loop
-                        
-                        if priority:
-                             if i in checklist0[checklist0!=i]: break #If we are in priority checking needs to be more lenient                      
-                        
-                        if not priority:
-                            if i in checklist: break #If we found a new contact in the contactslist break out of the loop
+                        if i in checklist: break #If we found a new contact in the contactslist break out of the loop
                         
                         #If a new contact can not be found in the contactlist, get a new entry from the checklist 
                         if n == len(contactlist)-1: 
                             i=checklist[0]
-                            temp, contacts, temp = self.contact(i, False, 0) #We are only interested in the contacts
-                            #If particle is connected to current cluster we need to find correct origin coordinates
-                            if contacts.any() in checklist0 and contacts.any() not in checklist: 
-                                print('Warning -> adding connected tile of particle', i)
-                                inew = i
-                                priority = True
-                                plot = False
-                                l = 0
-                                i = checklist0[0] #restart the sequence, but now end up in inew. This ensures correct xor1, yor1 and phi1
                             
-                            #Particle is disconnected, so choose new coordinates 
-                            else: 
-                                print('Warning -> adding disconnected tile of particle', i)
-                                xor1 = yor1 = l
-                                phi1 = 0
-                    
                     #Retrieve previous contact to get correct origin position
                     for n in range(len(con)):
                         arr = con[n]
                         if i in arr[1]:
-                            contact = con[0]
+                            contact = arr[0]
+                            break
                     
                     #Retrieve new angle from previous tiles
                     for n in range(len(data)):
                         arr = data[n]
-                        x = np.argwhere(arr==i)
+                        x = np.argwhere(arr[:,0]==i).flatten()
                         #If we have an entry equal to i and this is in contact with the previous entry
                         if len(x) != 0 and arr[x].flatten()[-1]==contact:
-                            phi1 = arr[x].flatten()[1] #Retrieve angle
+                            phi1 = arr[x].flatten()[1] #Retrieve angle and add pi to permutate plotting order
                             break
+                        else: orr=[]
                     
                     #Retrieve starting position from previous tiles
-                    for n in range(len(orr)):
+                    if len(orr) != 0:
                         arr = orr[n]
-                        if i in arr:
-                            x = np.argwhere(arr==i).flatten()[0]
-                            n = (x+1)%len(arr)
-                            xor1 = arr[n,1]
-                            yor1 = arr[n,2]
-                            break
-
+                        x = np.argwhere(arr==i).flatten()[0]
+                        n = (x+1)%len(arr)
+                        xor1 = arr[n,1]
+                        yor1 = arr[n,2]
+                    else: xor1=yor1=0
+            
                 #Remove contact from the checklist
                 checklist = checklist[checklist != i]
                 
@@ -207,36 +199,38 @@ class Tiling:
                 
                 #Loop over all contacts
                 while b:
-                    #Generate colors for each tile
-                    colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(con1))]
-                    
-                    #Extract angle to rotate plotting
-                    phi2 = data1[data1[:,0]==con1[k]].flatten()[1] + phi1 #add phi to make sure we plot in the correct order
-                    
-                    #Get contact data
-                    arg2, con2, data2 = self.contact(con1[k], flip=False, phi=phi2)
-                    
-                    #Create list of all the contacts of the contacts
-                    contactlist.extend(con2.tolist())
-                    contactlist = [*set(contactlist)] #remove duplicates
-                    
-                    #Get origin coordinates
-                    x = np.argwhere(orr1==con1[k]).flatten()[0]
-                    n = (x+1)%len(con1)
-                    xor2 = orr1[n,1]
-                    yor2 = orr1[n,2]
-                    #print(i, con1, con1[k], con2, xor2, yor2)
-                    
-                    #Plot the result and get origin coordinates
-                    orr2 = self.plotter(data2, xor2, yor2, color=colors[k], zorder=0, ls='-', alpha=0.7, arrow=arrow, plot=plot)
-                    
-                    #Save data
-                    con.append([con1[k],con2])
-                    orr.append(orr2)
-                    data.append(data2)
+                    if con1[k] in checklist:
+                        #Generate colors for each tile
+                        colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(con1))]
+                        
+                        #Extract angle to rotate plotting
+                        phi2 = (data1[data1[:,0]==con1[k]].flatten()[1]+ np.pi)%(2*np.pi) + phi1 #add phi to make sure we plot in the correct order
+                        
+                        #Get contact data
+                        arg2, con2, data2 = self.contact(con1[k], flip=False, phi=phi2)
+                        
+                        #Create list of all the contacts of the contacts
+                        contactlist.extend(con2.tolist())
+                        contactlist = [*set(contactlist)] #remove duplicates
+                        
+                        #Get origin coordinates
+                        x = np.argwhere(orr1[:,0]==con1[k]).flatten()[0]
+                        n = (x+1)%len(con1)
+                        xor2 = orr1[n,1]
+                        yor2 = orr1[n,2]
+                        
+                        #Plot the result and get origin coordinates
+                        orr1 = self.plotter(data1, xor1, yor1, color='black', zorder=1, ls=':', alpha=1, arrow=arrow, plot=plot)
+                        orr2 = self.plotter(data2, xor2, yor2, color=colors[k], zorder=0, ls='-', alpha=0.7, arrow=arrow, plot=plot)
+                        
+                        #Save data
+                        con.append([con1[k],con2])
+                        orr.append(orr2)
+                        data.append(data2)
 
-                    #Remove checked contacts from the checklist
-                    checklist = checklist[checklist != con1[k]]
+                        #Remove checked contacts from the checklist
+                        checklist = checklist[checklist != con1[k]]
+                    
                     #Move to next contact
                     k+=1
                     
@@ -244,7 +238,9 @@ class Tiling:
                     if k >= len(con1):
                         b = False #This lets us break from the while loop
                         l += 1 #Counter for making sure that we are not in the first iteration
-                plt.show()
+            
+            plt.title("Maxwell-Cremona Tiling")
+            plt.show()
             
     
     

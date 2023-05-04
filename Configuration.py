@@ -42,6 +42,21 @@ class Configuration:
                 self.rconversion = 1.0
                 self.height = 1.0
                 self.width = 1.0
+                self.test = False
+            elif (datatype == 'simulation_test'):
+                print("Reading simulation data!")
+                # Simulation data has periodic boundary conditions and also angles as output
+                self.periodic = True
+                self.hasAngles = True
+                # basis for mass computations
+                self.density = 1.0
+                # Prefactor of the stiffness coefficients
+                self.stiffness = 1.0
+                # radius conversion factor
+                self.rconversion = 1.0
+                self.height = 1.0
+                self.width = 1.0
+                self.test = True
             elif (datatype == 'experiment_square'):
                 self.step = strainstep
                 self.mu = mu0
@@ -151,7 +166,8 @@ class Configuration:
         def readSimdata(self, snap, verbose0, distSnapshot0=1000):
                 self.verbose = verbose0
                 self.distSnapshot = distSnapshot0
-                self.strain = self.gammadot*(1.0*snap)*self.distSnapshot
+                if not self.test:
+                    self.strain = self.gammadot*(1.0*snap)*self.distSnapshot
 
                 if (self.verbose):
                         print('L=' + str(self.L))
@@ -182,7 +198,7 @@ class Configuration:
                         self.dy = 0.0
                         self.alpha = 0.0
                         self.N = 0
-                else:
+                else:   
                         self.x = data[:,0]
                         self.y = data[:,1]
                         self.alpha = data[:,2]
@@ -191,6 +207,12 @@ class Configuration:
                         self.dalpha = data[:,5]
                         del data
 
+                if self.test: 
+                    self.Lx = np.amax(self.x)-np.amin(self.x)
+                    self.Ly = np.amax(self.y)-np.amin(self.y)
+                    self.L = np.amax([self.Lx, self.Ly])
+                    self.strain = 0
+                
                 filename = self.folder + '/Contact' + str(snap) + '.dat'
                 if (self.verbose):
                         print(filename)
@@ -215,16 +237,16 @@ class Configuration:
                         self.noConf = False
                         self.I = data[:,0].astype(int)
                         self.J = data[:,1].astype(int)
-                        self.fullmobi = data[:,4].astype(int)
                         self.nx = data[:,2]
                         self.ny = data[:,3]
+                        self.fullmobi = data[:,4].astype(int)
                         self.fnor = data[:,5]
                         self.ftan = data[:,6]+data[:,7]
                         del data
-                        self.x -= self.L*np.round(self.x/self.L)
-                        self.y -= self.L*np.round(self.y/self.L)
+                        if not self.test:
+                            self.x -= self.L*np.round(self.x/self.L)
+                            self.y -= self.L*np.round(self.y/self.L)
                         self.ncon = len(self.I)
-
         #========== Experimental data read-in for annulus ==================
         def ReadExpdataAnnulusPandas(self, verbose):
                 prefix = self.folder +'/particle_positions.txt'

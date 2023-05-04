@@ -22,7 +22,8 @@ import Tiling as TY
 
 # ========================= Sample execution script. Will be removed in bulk version. ===========
 foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
-outfolder = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
+#foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/test_horizontal/'
+outfolder = foldername
 
 if not os.path.exists(outfolder):
     os.makedirs(outfolder)
@@ -59,7 +60,7 @@ for k in range(start, stop, step):
     
     #Apply Maxwell cremona tiling
     ThisTiling = TY.Tiling(ThisConf)
-    ThisTiling.graph(True)
+    #ThisTiling.graph(True)
     ThisTiling.tile(arrow=False)
 
     
