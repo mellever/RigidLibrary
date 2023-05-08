@@ -21,8 +21,22 @@ import Analysis as AN
 import Tiling as TY
 
 # ========================= Sample execution script. Will be removed in bulk version. ===========
-foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
-#foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/test_horizontal/'
+
+test = False
+
+if test:
+    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/test_horizontal/'
+    form = 'simulation_test'
+    start = 0
+    stop = 1
+    step = 1
+else: 
+    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
+    form = 'simulation'
+    start = 1999
+    stop = 2000
+    step = 1
+
 outfolder = foldername
 
 if not os.path.exists(outfolder):
@@ -40,19 +54,13 @@ random_read[2, :] = [0, 0.8, 0]
 random_read[3, :] = [0, 0, 0.8]
 random_read[4, :] = [0.8, 0, 0]
 
-# stepping range
-# starts at 0 and ends at 2000 with timesteps of 1
-start = 1999
-stop = 2000
-step = 1
-
 #dummy= plt.figure(figsize=(15,7.5))
 # dummy, (ax1, ax2) = plt.subplots(nrows=1,ncols1,figsize=(15,7.5))
 clusout2 = np.zeros(int((stop-start)/step+1))
 clusterall2 = [[] for _ in range(int((stop-start)/step+1))]
 
 #Create config
-ThisConf = CF.Configuration(foldername,'simulation', mu, step)
+ThisConf = CF.Configuration(foldername, form, mu, step)
 
 for k in range(start, stop, step):
     #Read sim data
