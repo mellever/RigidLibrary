@@ -21,7 +21,7 @@ mu=0.3
 datatype = 'experiment_annulus'
 
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
-experiment_nums=['4']
+experiment_nums=['5']
 
 # Loop over experiment
 for experiment in experiment_nums:
@@ -47,7 +47,7 @@ for experiment in experiment_nums:
                 ThisConf.ReadExpdataAnnulusNumpy(verbose=False)
 
                 #Adding smart contacts
-                ThisConf.AddSmartContacts(dmax=1000, ang=4*np.pi, threshold=0.0001)
+                #ThisConf.AddSmartContacts(dmax=1000, ang=4*np.pi, threshold=0.0001)
                 
                 #Adding boundary contacts, passsing threshold argument is possible
                 ThisConf.AddBoundaryContactsAnnulus()
@@ -121,6 +121,9 @@ for experiment in experiment_nums:
                 #    # D2_min, needs assessment
                 #    fig7 = ThisAnalysis.DisplacementCorrelateD2min(True) 
                 """
-                #fig2.savefig(('step' + str(u) + '.pdf'))  
+                #For saving high resolution images
+                #fig2.set_size_inches(50,50)
+                #fig2.savefig('plot5.pdf', dpi=100)  
+                
                 plt.show()
                                            
