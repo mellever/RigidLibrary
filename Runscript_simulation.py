@@ -22,7 +22,7 @@ import Tiling as TY
 
 # ========================= Sample execution script. Will be removed in bulk version. ===========
 
-test = False
+test = True
 
 if test:
     foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/test/'

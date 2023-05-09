@@ -37,7 +37,7 @@ class Tiling:
             plt.show()
     
     #Function that plots tile and returns plotted points
-    def plotter(self, data, xor, yor, color, zorder, ls, alpha, arrow):
+    def plotter(self, data, xor, yor, color, zorder, ls, arrow):
         #Create array for saving the data
         orr = np.zeros((len(data[:,0]),3))
         #Loop over the data array
@@ -52,8 +52,8 @@ class Tiling:
             fy = data[k,3]
             
             #Plotting
-            if arrow: plt.arrow(xor, yor, fx, fy, color=color, zorder=zorder, ls=ls, alpha=alpha)
-            else: plt.plot([xor, xor+fx], [yor, yor+fy], color=color, marker='o', zorder=zorder, ls=ls, alpha=alpha)
+            if arrow: plt.arrow(xor, yor, fx, fy, color=color, zorder=zorder, ls=ls)
+            else: plt.plot([xor, xor+fx], [yor, yor+fy], color=color, marker='o', zorder=zorder, ls=ls)
             
             #Move to next point on the tile
             xor+=fx
@@ -170,10 +170,14 @@ class Tiling:
             print('no data')
         else:
             #Stating values
-            xor1 = yor1 = 0 #Staring position x, starting position y
+            xor1 = yor1 = l = 0 #Staring position x, starting position y, counter for amount of tiles
             checklist = np.unique(np.union1d(self.I, self.J)) #Checklist for checking if all contacts are plotted
             s = checklist[0] #Starting vertex
             contact = np.max(checklist)+1  #Start with an element that is for sure not in the checklist
+            
+            #Generate colors for each tile
+            colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(checklist))]
+            
             #Create lists to store data from which origin and angle can be recovered
             orr = []
 
@@ -194,7 +198,7 @@ class Tiling:
                 checklist = checklist[checklist != i]    
 
                 #If we are not in the first iteration
-                if i!=traversal_output[0]:
+                if l>=1:
                     #Get the contact via the parent node
                     contact = parent[i]
                     
@@ -213,15 +217,15 @@ class Tiling:
                 arg1, con1, data1 = self.contact(i, i=contact)
                 
                 #Plot and get force vector data
-                orr1 = self.plotter(data1, xor1, yor1, color='black', zorder=1, ls=':', alpha=1, arrow=arrow)
+                orr1 = self.plotter(data1, xor1, yor1, color=colors[l], zorder=0, ls='-', arrow=arrow)
+                
+                #Counter for amount of tiles
+                l+=1
                 
                 #Loop over all contacts
                 for k in range(len(con1)):
                     #Skip is necesarry
                     if con1[k] not in checklist: continue
-                    
-                    #Generate colors for each tile
-                    colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(con1))]
                     
                     #Get contact data
                     arg2, con2, data2 = self.contact(con1[k], i=i)
@@ -233,14 +237,17 @@ class Tiling:
                     yor2 = orr1[n,2]
                     
                     #Plot the result and get origin coordinates
-                    orr1 = self.plotter(data1, xor1, yor1, color='black', zorder=1, ls=':', alpha=1, arrow=arrow)
-                    orr2 = self.plotter(data2, xor2, yor2, color=colors[k], zorder=0, ls='-', alpha=0.7, arrow=arrow)
+                    #orr1 = self.plotter(data1, xor1, yor1, color='black', zorder=1, ls=':', arrow=arrow)
+                    orr2 = self.plotter(data2, xor2, yor2, color=colors[l], zorder=0, ls='-', arrow=arrow)
                     
                     #Save data
                     orr.append([con1[k],orr2])
                     
                     #Remove contact from the checklist
                     checklist = checklist[checklist != con1[k]]
+                    
+                    #Counter for amount of tiles
+                    l+=1
               
             plt.title("Maxwell-Cremona Tiling")
             plt.show()
