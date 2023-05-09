@@ -195,7 +195,7 @@ class Tiling:
                 checklist = checklist[checklist != i]    
 
                 #If we are not in the first iteration
-                if l>=1:
+                if i!=traversal_output[0]:
                     #Get the contact via the parent node
                     contact = parent[i]
                     
@@ -234,7 +234,7 @@ class Tiling:
                     yor2 = orr1[n,2]
                     
                     #Plot the result and get origin coordinates
-                    #orr1 = self.plotter(data1, xor1, yor1, color='black', zorder=1, ls=':', alpha=1, arrow=arrow, plot=plot)
+                    orr1 = self.plotter(data1, xor1, yor1, color='black', zorder=1, ls=':', alpha=1, arrow=arrow, plot=plot)
                     orr2 = self.plotter(data2, xor2, yor2, color=colors[k], zorder=0, ls='-', alpha=0.7, arrow=arrow, plot=plot)
                     
                     #Save data
@@ -242,12 +242,10 @@ class Tiling:
                     
                     #Remove contact from the checklist
                     checklist = checklist[checklist != con1[k]]
-                
-                #Counter
-                l+=1
-            
+              
             plt.title("Maxwell-Cremona Tiling")
             plt.show()
+                
                 
             
     
