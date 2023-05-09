@@ -25,7 +25,7 @@ import Tiling as TY
 test = False
 
 if test:
-    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/test_horizontal/'
+    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/test/'
     form = 'simulation_test'
     start = 0
     stop = 1
