@@ -6,6 +6,7 @@ import pickle as pickle
 import copy as cp
 import numpy as np
 import matplotlib.pyplot as plt
+from queue import Queue
 
 
 class Tiling:
@@ -118,117 +119,113 @@ class Tiling:
         
         return arg, con, data
     
+    #Function that returns all the contacts of a given particle
+    def adjacency(self, i):
+        argI = np.argwhere(self.J==i).flatten()
+        argJ = np.argwhere(self.I==i).flatten()
+        arg = np.concatenate([argI,argJ])
+        #Get particle ids from indices and put together in one array
+        I = self.I[argI]
+        J = self.J[argJ]
+        con = np.concatenate([I,J]).tolist()
+        return con
     
-    #Plotting the Maxwell Cremona tiling
+    #Function that creates adjacency list dictionary
+    def adjacency_list(self, checklist):
+        self.adj_list = {}
+        for i in checklist:
+            self.adj_list[i] = self.adjacency(i)
+        
+    
+    #Function that performs breadth first search, such that all contacts get plotted
+    #This has been taken from https://towardsdatascience.com/introduction-to-graph-algorithm-breadth-first-search-algorithm-in-python-8644b6d31880
+    #Currently visited and level are not in use, so these can be deleted
+    def BFS(self, s):
+        visited = {}
+        level = {}
+        parent = {}
+        traversal_output = []
+        queue = Queue()
+        for node in self.adj_list.keys():
+            visited[node] = False
+            parent[node] = None
+            level[node] = -1
+        visited[s] = True
+        level[s] = 0
+        queue.put(s)
+        while not queue.empty():
+            u = queue.get()
+            traversal_output.append(u)
+            for v in self.adj_list[u]:
+                if not visited[v]:
+                    visited[v] = True
+                    parent[v] = u
+                    level[v] = level[u] + 1
+                    queue.put(v)
+        return traversal_output, visited, level, parent
+    
+    
+    #Function for maxwell cremona tiling
     def tile(self, arrow):
         if isinstance(self.I, int):
             print('no data')
         else:
-            #Initial values
-            xor1 = yor1 = l = 0 #Staring position x, starting position y, starting angle, counter
-            checklist0 = np.unique(np.union1d(self.I, self.J)) #Checklist that does not change
+            xor1 = yor1 = l =0 #Staring position x, starting position y, starting angle, counter
             checklist = np.unique(np.union1d(self.I, self.J)) #Checklist for checking if all contacts are plotted
+            s = checklist[0] #Starting node
             contact = np.max(checklist)+1  #Start with an element that is for sure not in the checklist
-            a = True #So we enter the first while loop
-            i = checklist[0] #Start with first entry of the array, choosing different starting point should not change result
-            priority = False #value used for searching connected component
-            plot = True #Plot the tiles if true
+            plot = True
+            #Create lists to store data from which origin and angle can be recovered
+            orr = []
+
+            #Create adjacency dictionary
+            self.adjacency_list(checklist)
             
-            #Loop over all particles that have contacts
-            while a:
-                if len(checklist) == 0: break #if we have checked all contacts then exit
-                if l >= 1: #If we are not in the first iteration check over all contacts
-                    print(i, checklist)
-                    #If we dont have any new contacts to plot
-                    if len(contactlist)==0: 
-                        #Set a goal
-                        inew=checklist[0]
-                        priority = True
-                        
-                        #Start over to ensure correct positions
-                        i = checklist0[0]
-                        xor1 = yor1 = 0 
-                    else:
-                        #Search for new contact
-                        for n in range(len(contactlist)):
-                            i = contactlist[n]
-                            if i in checklist: break #If we found a new contact in the contactslist break out of the loop
-                            
-                            #If a new contact can not be found in the contactlist, get a new entry from the checklist 
-                            if n == len(contactlist)-1: 
-                                i=checklist[0]
-                        
-                        #Search for the priority 
-                        if priority:
-                            for n in range(len(contactlist)):
-                                if contactlist[n]==inew: 
-                                    i = contactlist[n]
-                                    priority = False
-                                    print('priority')
-                                    break
-                            
-                        #Retrieve previous contact to get correct origin position
-                        for n in range(len(con)):
-                            arr = con[n]
-                            if i in arr[1]:
-                                contact = arr[0]
-                                break
-                        
-                        #Retrieve new angle from previous tiles
-                        for n in range(len(data)):
-                            arr = data[n]
-                            x = np.argwhere(arr[:,0]==i).flatten()
-                            #If we have an entry equal to i and this is in contact with the previous entry
-                            if len(x) != 0 and arr[x].flatten()[-1]==contact:
-                                phi1 = arr[x].flatten()[1] #Retrieve angle 
-                                break
-                        
-                        #Retrieve starting position from previous tiles                 
-                        arr = orr[n]
-                        x = np.argwhere(arr==i).flatten()
-                        if len(x)!=0: 
-                            x=x[0]
-                            n = (x+1)%len(arr)
-                            xor1 = arr[n,1]
-                            yor1 = arr[n,2]
-                        else:
-                            print('warning, in a new cluster')
-                            xor1=yor1=1
+            #Perform breadth first search
+            traversal_output, visited, level, parent = self.BFS(s)
             
+            for i in traversal_output:
+                #If all contacts have been plotted stop the code
+                if len(checklist)==0: break
+                
+                #Only execute when a contact has not been plotted
+                if i not in checklist: continue
+                   
                 #Remove contact from the checklist
-                checklist = checklist[checklist != i]
-                
-                #Counter and value for next while loop
-                k = 0
-                b = True
-                
+                checklist = checklist[checklist != i]    
+
+                #If we are not in the first iteration
+                if l>=1:
+                    #Get the contact via the parent node
+                    contact = parent[i]
+                    
+                    #Extract the origin coordinates
+                    for n in range(len(orr)):
+                        arr = orr[n]
+                        if arr[0]==contact:
+                            arr1 = arr[1]
+                            x = np.argwhere(arr1[:,0]==i).flatten()[0]
+                            n = (x+1)%len(arr1)
+                            xor1 = arr1[n,1]
+                            yor1 = arr1[n,2]
+                            break
+               
                 #Get contact data and force data for contact i
                 arg1, con1, data1 = self.contact(i, i=contact)
                 
                 #Plot and get force vector data
                 orr1 = self.plotter(data1, xor1, yor1, color='black', zorder=1, ls=':', alpha=1, arrow=arrow, plot=plot)
                 
-                #Create empty list for all contacts of contacts
-                contactlist = []
-                
-                #Create lists to store data from which origin and angle can be recovered
-                data = []
-                orr = []
-                con = []
-                
                 #Loop over all contacts
-                while b:
-                    if (con1[k] in checklist) or priority: plot=True
+                for k in range(len(con1)):
+                    #Skip is necesarry
+                    if con1[k] not in checklist: continue
+                    
                     #Generate colors for each tile
                     colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(con1))]
                     
                     #Get contact data
                     arg2, con2, data2 = self.contact(con1[k], i=i)
-                    #print(i, con1, con1[k], data2)
-                    
-                    #Create list of all the contacts of the contacts
-                    contactlist.extend(con2.tolist())
-                    contactlist = [*set(contactlist)] #remove duplicates
                     
                     #Get origin coordinates
                     x = np.argwhere(orr1[:,0]==con1[k]).flatten()[0]
@@ -237,27 +234,21 @@ class Tiling:
                     yor2 = orr1[n,2]
                     
                     #Plot the result and get origin coordinates
-                    orr1 = self.plotter(data1, xor1, yor1, color='black', zorder=1, ls=':', alpha=1, arrow=arrow, plot=plot)
+                    #orr1 = self.plotter(data1, xor1, yor1, color='black', zorder=1, ls=':', alpha=1, arrow=arrow, plot=plot)
                     orr2 = self.plotter(data2, xor2, yor2, color=colors[k], zorder=0, ls='-', alpha=0.7, arrow=arrow, plot=plot)
                     
                     #Save data
-                    con.append([con1[k],con2])
-                    orr.append(orr2)
-                    data.append(data2)
-
-                    #Remove checked contacts from the checklist
+                    orr.append([con1[k],orr2])
+                    
+                    #Remove contact from the checklist
                     checklist = checklist[checklist != con1[k]]
-                    
-                    #Move to next contact
-                    k+=1
-                    
-                    #If all contacts have been checked, break of the while loop
-                    if k >= len(con1):
-                        b = False #This lets us break from the while loop
-                        l += 1 #Counter for making sure that we are not in the first iteration
+                
+                #Counter
+                l+=1
             
             plt.title("Maxwell-Cremona Tiling")
             plt.show()
+                
             
     
     
