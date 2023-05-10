@@ -175,8 +175,13 @@ class Tiling:
             s = checklist[0] #Starting vertex
             contact = np.max(checklist)+1  #Start with an element that is for sure not in the checklist
             
+            #For plotting
+            plt.figure(figsize=(15,10)) 
+            
             #Generate colors for each tile
-            colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(checklist))]
+            #colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(checklist))] #Random colors scheme
+            #colors = ['black', '#fac901', '#225095', '#dd0100'] #Mondriaan color scheme
+            colors = ['#4477AA', '#66CCEE', '#228833', '#CCBB44', '#EE6677', '#AA3377', '#BBBBBB'] #Tol's color blind friendly color scheme
             
             #Create lists to store data from which origin and angle can be recovered
             orr = []
@@ -217,7 +222,7 @@ class Tiling:
                 arg1, con1, data1 = self.contact(i, i=contact)
                 
                 #Plot and get force vector data
-                orr1 = self.plotter(data1, xor1, yor1, color=colors[l], zorder=0, ls='-', arrow=arrow)
+                orr1 = self.plotter(data1, xor1, yor1, color=colors[l%len(colors)], zorder=0, ls='-', arrow=arrow)
                 
                 #Counter for amount of tiles
                 l+=1
@@ -238,7 +243,7 @@ class Tiling:
                     
                     #Plot the result and get origin coordinates
                     #orr1 = self.plotter(data1, xor1, yor1, color='black', zorder=1, ls=':', arrow=arrow)
-                    orr2 = self.plotter(data2, xor2, yor2, color=colors[l], zorder=0, ls='-', arrow=arrow)
+                    orr2 = self.plotter(data2, xor2, yor2, color=colors[l%len(colors)], zorder=0, ls='-', arrow=arrow)
                     
                     #Save data
                     orr.append([con1[k],orr2])
@@ -248,8 +253,11 @@ class Tiling:
                     
                     #Counter for amount of tiles
                     l+=1
-              
-            plt.title("Maxwell-Cremona Tiling")
+            
+            plt.title('Maxwell-Cremona Tiling')
+            plt.xlabel(r'$F_x\ [N]$')
+            plt.ylabel(r'$F_y\ [N]$')
+            #plt.savefig('tiling1.pdf')
             plt.show()
                 
                 

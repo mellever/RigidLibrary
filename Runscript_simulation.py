@@ -68,7 +68,7 @@ for k in range(start, stop, step):
     
     #Apply Maxwell cremona tiling
     ThisTiling = TY.Tiling(ThisConf)
-    #ThisTiling.graph(True)
+    ThisTiling.graph(False)
     ThisTiling.tile(arrow=False)
 
     
