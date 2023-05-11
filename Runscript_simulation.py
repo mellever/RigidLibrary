@@ -22,7 +22,7 @@ import Tiling as TY
 
 # ========================= Sample execution script. Will be removed in bulk version. ===========
 
-test = True
+test = False
 
 if test:
     foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/test/'
@@ -31,11 +31,11 @@ if test:
     stop = 1
     step = 1
 else: 
-    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
+    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1/'
     form = 'simulation'
-    start = 1999
+    start = 410
     stop = 2000
-    step = 1
+    step = stop-start
 
 outfolder = foldername
 
@@ -43,7 +43,7 @@ if not os.path.exists(outfolder):
     os.makedirs(outfolder)
 
 #Hardcoded constants of the simulation
-N = 64
+N = 1024
 mu = 10
 
 # Colors for the clusters. They are random, but I have redefined the first couple of ones to have preset colors, starting with black.
@@ -68,11 +68,10 @@ for k in range(start, stop, step):
     
     #Apply Maxwell cremona tiling
     ThisTiling = TY.Tiling(ThisConf)
-    ThisTiling.graph(False)
+    #ThisTiling.graph(False)
     ThisTiling.tile(arrow=False)
 
     
-    """
     ########## Setting up and playing the pebble game
     ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
     
@@ -100,5 +99,6 @@ for k in range(start, stop, step):
     #ThisAnalysis.plotPebbles(True,True,True,False,False)
     fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
 
+
+
 plt.show()
-"""

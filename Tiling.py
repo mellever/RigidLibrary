@@ -176,12 +176,12 @@ class Tiling:
             contact = np.max(checklist)+1  #Start with an element that is for sure not in the checklist
             
             #For plotting
-            plt.figure(figsize=(15,10)) 
+            plt.figure() 
             
             #Generate colors for each tile
-            #colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(checklist))] #Random colors scheme
+            colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(checklist))] #Random colors scheme
             #colors = ['black', '#fac901', '#225095', '#dd0100'] #Mondriaan color scheme
-            colors = ['#4477AA', '#66CCEE', '#228833', '#CCBB44', '#EE6677', '#AA3377', '#BBBBBB'] #Tol's color blind friendly color scheme
+            #colors = ['#4477AA', '#66CCEE', '#228833', '#CCBB44', '#EE6677', '#AA3377', '#BBBBBB'] #Tol's color blind friendly color scheme
             
             #Create lists to store data from which origin and angle can be recovered
             orr = []
@@ -257,9 +257,8 @@ class Tiling:
             plt.title('Maxwell-Cremona Tiling')
             plt.xlabel(r'$F_x\ [N]$')
             plt.ylabel(r'$F_y\ [N]$')
-            #plt.savefig('tiling1.pdf')
-            plt.show()
-                
+            plt.axis('equal')
+            #plt.savefig('tiling_test.pdf')
                 
             
     
