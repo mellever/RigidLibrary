@@ -31,9 +31,9 @@ if test:
     stop = 1
     step = 1
 else: 
-    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1/'
+    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
     form = 'simulation'
-    start = 410
+    start = 1999 #410 is partially rigid for the large system
     stop = 2000
     step = stop-start
 
@@ -66,12 +66,6 @@ for k in range(start, stop, step):
     #Read sim data
     ThisConf.readSimdata(k, False)
     
-    #Apply Maxwell cremona tiling
-    ThisTiling = TY.Tiling(ThisConf)
-    #ThisTiling.graph(False)
-    ThisTiling.tile(arrow=False)
-
-    
     ########## Setting up and playing the pebble game
     ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
     
@@ -98,7 +92,17 @@ for k in range(start, stop, step):
     #def plotPebbles(self,plotCir,plotPeb,plotPebCon,plotClus,plotOver,**kwargs):
     #ThisAnalysis.plotPebbles(True,True,True,False,False)
     fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
-
-
+    
+    #Apply Maxwell cremona tiling
+    #Plotting the contact network
+    #fig3 = ThisAnalysis.graph(False)
+    
+    #Plotting the Maxwell cremona filing
+    #Colorscheme options: cluster, force, colorblind, random
+    fig4 = ThisAnalysis.tile(colorscheme='force')
+    fig5 = ThisAnalysis.tile(colorscheme='cluster')
+    
+    #Force color scheme does not make sense, for know we only determine the size of the force using the normal force.
+    #I think that the tangential force also needs to be used. 
 
 plt.show()
