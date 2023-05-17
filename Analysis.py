@@ -72,6 +72,7 @@ class Analysis:
         self.ft = self.conf.ftan
         self.nx = self.conf.nx
         self.ny = self.conf.ny
+        self.ftot = np.sqrt(np.square(self.fn)+np.square(self.ft))
         # this is the distance beween lines in the double contact plots
         if self.conf.datatype == 'experiment_square':
                 self.small = 8.0
@@ -162,9 +163,9 @@ class Analysis:
         if (plotF):
             # fscale=np.mean(self.fnor)
             fscale = self.fgiven
-            Fcolor, Fmap = self.color_init(np.sqrt(np.amax(self.conf.fnor))/fscale)
+            Fcolor, Fmap = self.color_init(np.sqrt(np.amax(self.ftot))/fscale)
             for k in range(len(self.conf.I)):
-                fval = np.sqrt(self.conf.fnor[k]/fscale)
+                fval = np.sqrt(self.ftot[k]/fscale)
                 x0, x1, y0, y1 = self.conf.getConPos(k)
                 conlink = lne.Line2D([x0, x1], [y0, y1], color=Fcolor(fval), lw=2*fval)
                 axval.add_line(conlink)
@@ -774,9 +775,10 @@ class Analysis:
             plt.title("Contact Network")
     
     # Function that plots tile and returns plotted points
-    def plotter(self, data, xor, yor, zorder, ls):
+    def vertices(self, data, xor, yor, i):
         # Create array for saving the data
         orr = np.zeros((len(data[:,0]),3))
+        coords = [[xor, yor]]
         # Loop over the data array
         for k in range(len(data[:,0])):
             # Save data
@@ -788,38 +790,15 @@ class Analysis:
             fx = data[k,2]
             fy = data[k,3]
             
-            alpha = 0.7
-            
-            #Plotting
-            if self.colorscheme == 'force':
-                fscale = self.fgiven
-                Fcolor, Fmap = self.color_init(np.sqrt(np.amax(self.fn))/fscale)
-                fval = np.sqrt(self.fn[data[k,0].astype(int)]/fscale)
-                plt.plot([xor, xor+fx], [yor, yor+fy], color=Fcolor(fval), lw=2*fval, marker='.', zorder=zorder, ls=ls, alpha=alpha)
-            
-            elif self.colorscheme == 'cluster':
-                colors = self.cluster_colors
-                label = int(self.pebbles.cluster[data[k,0].astype(int)])
-                if label != -1:
-                    plt.plot([xor, xor+fx], [yor, yor+fy], color=colors[label], marker='o', zorder=zorder, ls=ls, alpha=alpha)
-                else:
-                    plt.plot([xor, xor+fx], [yor, yor+fy], color=(0.65, 0.65, 0.65), marker='o', zorder=zorder, ls=ls, alpha=alpha)
-                
-            
-            elif self.colorscheme == 'random':
-                colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(self.N)]
-                plt.plot([xor, xor+fx], [yor, yor+fy], color=colors[data[k,0].astype(int)], marker='o', zorder=zorder, ls=ls, alpha=alpha)
-                
-            elif self.colorscheme == 'colorblind':
-                colors = ['#4477AA', '#66CCEE', '#228833', '#CCBB44', '#EE6677', '#AA3377', '#BBBBBB'] #Tol's color blind friendly color scheme
-                plt.plot([xor, xor+fx], [yor, yor+fy], color=colors[data[k,0].astype(int)], marker='o', zorder=zorder, ls=ls, alpha=alpha)
-            
-            else: 
-                sys.exit('Not a valid color scheme, exiting program.')
-            
             # Move to next point on the tile
             xor+=fx
             yor+=fy
+            
+            #Add to list
+            coords.append([xor,yor])
+            
+        #Add to list for plotting
+        self.tiles.append([i, coords])
         return orr
     
     def contact(self, contact, i):
@@ -927,7 +906,7 @@ class Analysis:
     
     
     # Function for maxwell cremona tiling
-    def tile(self, colorscheme):
+    def tile(self):
         if isinstance(self.I, int):
             print('no data')
         else:
@@ -940,9 +919,6 @@ class Analysis:
             # For plotting
             plt.figure() 
             
-            #Colorscheme
-            self.colorscheme = colorscheme
-            
             # Create lists to store data from which origin and angle can be recovered
             orr = []
 
@@ -951,6 +927,9 @@ class Analysis:
             
             # Perform breadth first search
             traversal_output, visited, level, parent = self.BFS(s)
+            
+            #Create empty list to store all the data
+            self.tiles = []
             
             for i in traversal_output:
                 # If all contacts have been plotted stop the code
@@ -982,7 +961,7 @@ class Analysis:
                 arg1, con1, data1 = self.contact(i, i=contact)
                 
                 # Plot and get force vector data
-                orr1 = self.plotter(data1, xor1, yor1, zorder=0, ls='-')
+                orr1 = self.vertices(data1, xor1, yor1, i)
                 
                 # Counter for amount of tiles
                 l+=1
@@ -1002,8 +981,8 @@ class Analysis:
                     yor2 = orr1[n,2]
                     
                     # Plot the result and get origin coordinates
-                    # orr1 = self.plotter(data1, xor1, yor1, zorder=1, ls=':')
-                    orr2 = self.plotter(data2, xor2, yor2, zorder=0, ls='-')
+                    # orr1 = self.vertices(data1, xor1, yor1)
+                    orr2 = self.vertices(data2, xor2, yor2, con1[k])
                     
                     # Save data
                     orr.append([con1[k],orr2])
@@ -1013,12 +992,61 @@ class Analysis:
                     
                     # Counter for amount of tiles
                     l+=1
+
+    def plotter(self, colorscheme, filled):
+        
+        if filled:
+            fig = plt.figure()
+            ax = fig.gca()
+            #set by hand for saving figure
+            ax.set_xlim(-0.3,0.3)
+            ax.set_ylim(-0.3,0.3)
+            colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(self.tiles))]
+
+        for k in range(len(self.tiles)):
+            data = self.tiles[k]
+            vertices = data[1]
             
-            plt.title('Maxwell-Cremona Tiling')
-            plt.xlabel(r'$F_x\ [N]$')
-            plt.ylabel(r'$F_y\ [N]$')
-            plt.axis('equal')
-
-
-
+            if filled:
+                ax.add_patch(ptch.Polygon(vertices, facecolor=colors[k], edgecolor=None, alpha=0.7))
+                fig.savefig('tilingfilled.pdf')
+                
+            if not filled:
+                for i in range(len(vertices)-1):
+                    #Extract vertices
+                    vertex1 = vertices[i]
+                    vertex2 = vertices[i+1]
+                    
+                    #Define colors
+                    if colorscheme == 'cluster':
+                        colors = self.cluster_colors
+                        label = int(self.pebbles.cluster[k[0]])
+                        if label != -1:
+                            plt.plot([vertex1[0], vertex2[0]], [vertex1[1], vertex2[1]], color=colors[label], marker='o')
+                        else:
+                            plt.plot([vertex1[0], vertex2[0]], [vertex1[1], vertex2[1]], color=(0.65, 0.65, 0.65), marker='o')
+                    
+                    elif colorscheme == 'force':
+                        fscale = self.fgiven
+                        Fcolor, Fmap = self.color_init(np.sqrt(np.amax(self.fn))/fscale)
+                        fval = np.sqrt(self.fn[k[0]]/fscale)
+                        plt.plot([vertex1[0], vertex2[0]], [vertex1[1], vertex2[1]], color=Fcolor(fval), lw=2*fval, marker='.')
+                        
+                    
+                    elif colorscheme == 'random':
+                        colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(self.N)]
+                        plt.plot([vertex1[0], vertex2[0]], [vertex1[1], vertex2[1]], color=colors[data[k,0].astype(int)], marker='o')
+                        
+                    elif colorscheme == 'colorblind':
+                        colors = ['#4477AA', '#66CCEE', '#228833', '#CCBB44', '#EE6677', '#AA3377', '#BBBBBB'] #Tol's color blind friendly color scheme
+                        plt.plot([vertex1[0], vertex2[0]], [vertex1[1], vertex2[1]], color=colors[k[0]], marker='o')
+                    
+                    else: 
+                        sys.exit('Not a valid color scheme, exiting program.')
+                    
+                
+        plt.title('Maxwell-Cremona Tiling')
+        plt.xlabel(r'$F_x\ [N]$')
+        plt.ylabel(r'$F_y\ [N]$')
+        plt.axis('equal')
 
