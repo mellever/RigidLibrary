@@ -22,93 +22,79 @@ class Tiling:
         self.nx = conf.nx
         self.ny = conf.ny
         
-    #Plotting the contact network
-    def graph(self, verbose0):
-        if isinstance(self.I, int):
-            print('no data')
-        else:
-            for i in self.I:
-                for k in self.J[self.I==i]:
-                    x0, x1, y0, y1 = self.conf.getConPos2(i, k)
-                    plt.plot([x0, x1], [y0, y1], color='black', marker='o', markersize=15, markerfacecolor='white')
-                    if verbose0: plt.annotate(k, (x1,y1))
-                if verbose0: plt.annotate(i, (x0,y0))
-            plt.title("Contact Network")
-    
-    #Function that plots tile and returns plotted points
-    def plotter(self, data, xor, yor, color, zorder, ls, arrow):
-        #Create array for saving the data
+    # ================= Maxwell-Cremona Tiling ======================= 
+    # Function that plots tile and returns plotted points
+    def vertices(self, data, xor, yor, i):
+        # Create array for saving the data
         orr = np.zeros((len(data[:,0]),3))
-        #Loop over the data array
+        #add first coordinates to list
+        coords = [[i, xor, yor]]
+        # Loop over the data array
         for k in range(len(data[:,0])):
-            #Save data
+            # Save data
             orr[k, 0] = data[k,0]
             orr[k, 1] = xor
             orr[k, 2] = yor
             
-            #Retrieve forces
+            # Retrieve forces
             fx = data[k,2]
             fy = data[k,3]
             
-            #Plotting
-            if arrow: plt.arrow(xor, yor, fx, fy, color=color, zorder=zorder, ls=ls)
-            else: plt.plot([xor, xor+fx], [yor, yor+fy], color=color, marker='o', zorder=zorder, ls=ls)
-            
-            #Move to next point on the tile
+            # Move to next point on the tile
             xor+=fx
             yor+=fy
+            
+            #Add to list
+            coords.append([data[k,0], xor,yor])
+            
+        #Add to list for plotting
+        self.tiles.append([i, coords])
         return orr
     
     def contact(self, contact, i):
-        #Determine indices of contacts and put together in one array
-        argI = np.argwhere(self.J==contact).flatten()
-        argJ = np.argwhere(self.I==contact).flatten()
-        arg = np.concatenate([argI,argJ])
-        #Get particle ids from indices and put together in one array
-        I = self.I[argI]
-        J = self.J[argJ]
-        con = np.concatenate([I,J])
+        # Determine contacts
+        I, arg, con = self.adjacency(contact)
     
-        #Force data we want to extract
+        # Force data we want to extract
         data=np.zeros((len(arg),5))
         
-        #Loop over all contacts 
+        # Loop over all contacts 
         for k in range(len(arg)):
-            #Add particle number
+            # Add particle number
             data[k,0] = con[k]
             
-            #Add contact
+            # Add contact
             data[k,4] = contact
             
-            #Directions and forces
+            # Directions and forces
             nx = self.nx[arg[k]]
             ny = self.ny[arg[k]]
             fn = self.fn[arg[k]]
             ft = self.ft[arg[k]]
             
-            #Make sure that contacts have equal but opposite forces
+            # Make sure that contacts have equal but opposite forces
             if con[k] in I:
                 nx = -nx
                 ny = -ny
             
-            #Compute angle between particles
+            # Compute angle between particles
             theta = np.arctan2(ny, nx) #%(2*np.pi)
             if theta < 0: 
                 theta+=2*np.pi
             
-            #Compute components of forces
+            # Compute components of forces
             fx=fn*nx+ft*ny
             fy=fn*ny-ft*nx
      
-            #Add to array
+            # Add to array
             data[k,2] = fx
             data[k,3] = fy
             data[k,1] = theta
 
-        #Sort array from smallest to largest angle
+        # Sort array from smallest to largest angle
         data = data[data[:, 1].argsort()]
         
-        #Permute array if necessary
+        # Permute array if necessary
         startidx = np.argwhere(data[:,0]==i).flatten()
         if len(startidx)==1:
             ang = data[startidx[0], 1]
@@ -117,32 +103,31 @@ class Tiling:
         
         return arg, con, data
     
-    #Function that returns all the contacts of a given particle
+    # Function that returns all the contacts of a given particle
     def adjacency(self, i):
         argI = np.argwhere(self.J==i).flatten()
         argJ = np.argwhere(self.I==i).flatten()
         arg = np.concatenate([argI,argJ])
-        #Get particle ids from indices and put together in one array
+        # Get particle ids from indices and put together in one array
         I = self.I[argI]
         J = self.J[argJ]
         con = np.concatenate([I,J]).tolist()
-        return con
+        return I, arg, con
     
-    #Function that creates adjacency list dictionary
+    # Function that creates adjacency list dictionary
     def adjacency_list(self, checklist):
         self.adj_list = {}
         for i in checklist:
-            self.adj_list[i] = self.adjacency(i)
+            I, arg, con = self.adjacency(i)
+            self.adj_list[i] = con
         
-    
-    #Function that performs breadth first search, such that all contacts get plotted
-    #This has been taken from https://towardsdatascience.com/introduction-to-graph-algorithm-breadth-first-search-algorithm-in-python-8644b6d31880
-    #Currently visited and level are not in use, so these can be deleted
+    # Function that performs breadth first search, such that all contacts get plotted
+    # This has been taken from https://towardsdatascience.com/introduction-to-graph-algorithm-breadth-first-search-algorithm-in-python-8644b6d31880
     def BFS(self, s):
         visited = {}
         level = {}
         parent = {}
-        traversal_output = []
+        particles = []
         queue = Queue()
         for node in self.adj_list.keys():
             visited[node] = False
@@ -153,60 +138,58 @@ class Tiling:
         queue.put(s)
         while not queue.empty():
             u = queue.get()
-            traversal_output.append(u)
+            particles.append(u)
             for v in self.adj_list[u]:
                 if not visited[v]:
                     visited[v] = True
                     parent[v] = u
                     level[v] = level[u] + 1
                     queue.put(v)
-        return traversal_output, visited, level, parent
+        return particles, parent
     
     
-    #Function for maxwell cremona tiling
-    def tile(self, arrow):
+    # Function for maxwell cremona tiling
+    def tile(self):
         if isinstance(self.I, int):
             print('no data')
         else:
-            #Stating values
+            # Stating values
             xor1 = yor1 = l = 0 #Staring position x, starting position y, counter for amount of tiles
             checklist = np.unique(np.union1d(self.I, self.J)) #Checklist for checking if all contacts are plotted
             s = checklist[0] #Starting vertex
             contact = np.max(checklist)+1  #Start with an element that is for sure not in the checklist
             
-            #For plotting
+            # For plotting
             plt.figure() 
             
-            #Generate colors for each tile
-            colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(checklist))] #Random colors scheme
-            #colors = ['black', '#fac901', '#225095', '#dd0100'] #Mondriaan color scheme
-            #colors = ['#4477AA', '#66CCEE', '#228833', '#CCBB44', '#EE6677', '#AA3377', '#BBBBBB'] #Tol's color blind friendly color scheme
-            
-            #Create lists to store data from which origin and angle can be recovered
+            # Create lists to store data from which origin and angle can be recovered
             orr = []
 
-            #Create adjacency dictionary
+            # Create adjacency dictionary
             self.adjacency_list(checklist)
             
-            #Perform breadth first search
-            traversal_output, visited, level, parent = self.BFS(s)
+            # Perform breadth first search and return list of what particles to root over and what contacts these particles have
+            particles, parent = self.BFS(s)
             
-            for i in traversal_output:
-                #If all contacts have been plotted stop the code
+            #Create empty list to store all the data
+            self.tiles = []
+            
+            for i in particles:
+                # If all contacts have been plotted stop the code
                 if len(checklist)==0: break
                 
-                #Only execute when a contact has not been plotted
+                # Only execute when a contact has not been plotted
                 if i not in checklist: continue
                    
-                #Remove contact from the checklist
+                # Remove contact from the checklist
                 checklist = checklist[checklist != i]    
 
-                #If we are not in the first iteration
+                # If we are not in the first iteration
                 if l>=1:
-                    #Get the contact via the parent node
+                    # Get the contact via the parent node
                     contact = parent[i]
                     
-                    #Extract the origin coordinates
+                    # Extract the origin coordinates
                     for n in range(len(orr)):
                         arr = orr[n]
                         if arr[0]==contact:
@@ -217,47 +200,41 @@ class Tiling:
                             yor1 = arr1[n,2]
                             break
                
-                #Get contact data and force data for contact i
+                # Get contact data and force data for contact i
                 arg1, con1, data1 = self.contact(i, i=contact)
                 
-                #Plot and get force vector data
-                orr1 = self.plotter(data1, xor1, yor1, color=colors[l%len(colors)], zorder=0, ls='-', arrow=arrow)
+                # Plot and get force vector data
+                orr1 = self.vertices(data1, xor1, yor1, i)
                 
-                #Counter for amount of tiles
+                # Counter for amount of tiles
                 l+=1
                 
-                #Loop over all contacts
+                # Loop over all contacts
                 for k in range(len(con1)):
-                    #Skip is necesarry
+                    # Skip is necesarry
                     if con1[k] not in checklist: continue
                     
-                    #Get contact data
+                    # Get contact data
                     arg2, con2, data2 = self.contact(con1[k], i=i)
                     
-                    #Get origin coordinates
+                    # Get origin coordinates
                     x = np.argwhere(orr1[:,0]==con1[k]).flatten()[0]
                     n = (x+1)%len(con1)
                     xor2 = orr1[n,1]
                     yor2 = orr1[n,2]
                     
-                    #Plot the result and get origin coordinates
-                    #orr1 = self.plotter(data1, xor1, yor1, color='black', zorder=1, ls=':', arrow=arrow)
-                    orr2 = self.plotter(data2, xor2, yor2, color=colors[l%len(colors)], zorder=0, ls='-', arrow=arrow)
+                    # Plot the result and get origin coordinates
+                    # orr1 = self.vertices(data1, xor1, yor1)
+                    orr2 = self.vertices(data2, xor2, yor2, con1[k])
                     
-                    #Save data
+                    # Save data
                     orr.append([con1[k],orr2])
                     
-                    #Remove contact from the checklist
+                    # Remove contact from the checklist
                     checklist = checklist[checklist != con1[k]]
                     
-                    #Counter for amount of tiles
+                    # Counter for amount of tiles
                     l+=1
-            
-            plt.title('Maxwell-Cremona Tiling')
-            plt.xlabel(r'$F_x\ [N]$')
-            plt.ylabel(r'$F_y\ [N]$')
-            plt.axis('equal')
-            #plt.savefig('tiling_test.pdf')
                 
             
     

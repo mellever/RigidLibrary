@@ -23,6 +23,7 @@ import glob
 from Configuration import *
 from Pebbles import *
 from Hessian import *
+from Tiling import *
 
 # Note: changed to simple pickle on move to python 3. Compatibility problems with loading old pickle files expected!
 # import cPickle as pickle
@@ -52,10 +53,11 @@ matplotlib.rcParams['legend.fontsize'] = 14.0
 class Analysis:
 
     # =========== Analysis constructor: Give it a configuration (mandatory), and Pebbles and Hessian, which are allowed to be empty shells
-    def __init__(self, conf0, pebbles0, hessian0, fgiven0=0.001, verbose0=False):
+    def __init__(self, conf0, pebbles0, hessian0, tiling0, fgiven0=0.001, verbose0=False):
         self.conf = conf0
         self.pebbles = pebbles0
         self.hessian = hessian0
+        self.tiling = tiling0
         self.verbose = verbose0
         self.fgiven = fgiven0
         # basic dimensions ...
@@ -63,16 +65,16 @@ class Analysis:
         self.ncon = self.conf.ncon
         self.Lx = self.conf.Lx
         self.Ly = self.conf.Ly
-        # Data for the Maxwell-Cremona tiling
+        # Data for the Maxwell-Cremona tiling plotting
         self.I = self.conf.I
         self.J = self.conf.J
-        self.x = self.conf.x
-        self.y = self.conf.y
         self.fn = self.conf.fnor
         self.ft = self.conf.ftan
-        self.nx = self.conf.nx
-        self.ny = self.conf.ny
-        self.ftot = np.sqrt(np.square(self.fn)+np.square(self.ft))
+        self.ftot = np.sqrt(np.square(self.fn)+np.square(self.ft)) #Use this for color scheme forces?
+        self.tiles = self.tiling.tiles
+        
+        
+        
         # this is the distance beween lines in the double contact plots
         if self.conf.datatype == 'experiment_square':
                 self.small = 8.0
@@ -759,243 +761,27 @@ class Analysis:
         plt.title(' D2 (log-scale)')
         return fig
 
-    # ================= Maxwell-Cremona Tiling =======================
-    # Plotting the contact network
-    def graph(self, verbose0):
+    #Function for plotting the contacts network
+    def contactnetwork(self):
         if isinstance(self.I, int):
             print('no data')
         else:
-            plt.figure()
+            fig = plt.figure()
+            axval = fig.add_subplot(1, 1, 1)
             for i in self.I:
                 for k in self.J[self.I==i]:
                     x0, x1, y0, y1 = self.conf.getConPos2(i, k)
-                    plt.plot([x0, x1], [y0, y1], color='black', marker='o', markersize=15, markerfacecolor='white')
-                    if verbose0: plt.annotate(k, (x1,y1))
-                if verbose0: plt.annotate(i, (x0,y0))
+                    conlink = lne.Line2D([x0, x1], [y0, y1], color='black', marker='o', markersize=15, markerfacecolor='white')
+                    axval.add_line(conlink)
             plt.title("Contact Network")
+        return fig
     
-    # Function that plots tile and returns plotted points
-    def vertices(self, data, xor, yor, i):
-        # Create array for saving the data
-        orr = np.zeros((len(data[:,0]),3))
-        #add first coordinates to list
-        coords = [[i, xor, yor]]
-        # Loop over the data array
-        for k in range(len(data[:,0])):
-            # Save data
-            orr[k, 0] = data[k,0]
-            orr[k, 1] = xor
-            orr[k, 2] = yor
-            
-            # Retrieve forces
-            fx = data[k,2]
-            fy = data[k,3]
-            
-            # Move to next point on the tile
-            xor+=fx
-            yor+=fy
-            
-            #Add to list
-            coords.append([data[k,0], xor,yor])
-            
-        #Add to list for plotting
-        self.tiles.append([i, coords])
-        return orr
-    
-    def contact(self, contact, i):
-        # Determine indices of contacts and put together in one array
-        argI = np.argwhere(self.J==contact).flatten()
-        argJ = np.argwhere(self.I==contact).flatten()
-        arg = np.concatenate([argI,argJ])
-        # Get particle ids from indices and put together in one array
-        I = self.I[argI]
-        J = self.J[argJ]
-        con = np.concatenate([I,J])
-    
-        # Force data we want to extract
-        data=np.zeros((len(arg),5))
+    #Function for plotting the Maxwell-Cremona tiling
+    def tileplotter(self, colorscheme, filled):
+        #Create figure
+        fig = plt.figure()
+        axval = fig.add_subplot(1, 1, 1)    
         
-        # Loop over all contacts 
-        for k in range(len(arg)):
-            # Add particle number
-            data[k,0] = con[k]
-            
-            # Add contact
-            data[k,4] = contact
-            
-            # Directions and forces
-            nx = self.nx[arg[k]]
-            ny = self.ny[arg[k]]
-            fn = self.fn[arg[k]]
-            ft = self.ft[arg[k]]
-            
-            # Make sure that contacts have equal but opposite forces
-            if con[k] in I:
-                nx = -nx
-                ny = -ny
-            
-            # Compute angle between particles
-            theta = np.arctan2(ny, nx) #%(2*np.pi)
-            if theta < 0: 
-                theta+=2*np.pi
-            
-            # Compute components of forces
-            fx=fn*nx+ft*ny
-            fy=fn*ny-ft*nx
-     
-            # Add to array
-            data[k,2] = fx
-            data[k,3] = fy
-            data[k,1] = theta
-
-        # Sort array from smallest to largest angle
-        data = data[data[:, 1].argsort()]
-        
-        # Permute array if necessary
-        startidx = np.argwhere(data[:,0]==i).flatten()
-        if len(startidx)==1:
-            ang = data[startidx[0], 1]
-            data[:,1] = (data[:,1] - ang)%(2*np.pi)
-            data = data[data[:, 1].argsort()]
-        
-        return arg, con, data
-    
-    # Function that returns all the contacts of a given particle
-    def adjacency(self, i):
-        argI = np.argwhere(self.J==i).flatten()
-        argJ = np.argwhere(self.I==i).flatten()
-        arg = np.concatenate([argI,argJ])
-        # Get particle ids from indices and put together in one array
-        I = self.I[argI]
-        J = self.J[argJ]
-        con = np.concatenate([I,J]).tolist()
-        return con
-    
-    # Function that creates adjacency list dictionary
-    def adjacency_list(self, checklist):
-        self.adj_list = {}
-        for i in checklist:
-            self.adj_list[i] = self.adjacency(i)
-        
-    
-    # Function that performs breadth first search, such that all contacts get plotted
-    # This has been taken from https://towardsdatascience.com/introduction-to-graph-algorithm-breadth-first-search-algorithm-in-python-8644b6d31880
-    # Currently visited and level are not in use, so these can be deleted
-    def BFS(self, s):
-        visited = {}
-        level = {}
-        parent = {}
-        traversal_output = []
-        queue = Queue()
-        for node in self.adj_list.keys():
-            visited[node] = False
-            parent[node] = None
-            level[node] = -1
-        visited[s] = True
-        level[s] = 0
-        queue.put(s)
-        while not queue.empty():
-            u = queue.get()
-            traversal_output.append(u)
-            for v in self.adj_list[u]:
-                if not visited[v]:
-                    visited[v] = True
-                    parent[v] = u
-                    level[v] = level[u] + 1
-                    queue.put(v)
-        return traversal_output, visited, level, parent
-    
-    
-    # Function for maxwell cremona tiling
-    def tile(self):
-        if isinstance(self.I, int):
-            print('no data')
-        else:
-            # Stating values
-            xor1 = yor1 = l = 0 #Staring position x, starting position y, counter for amount of tiles
-            checklist = np.unique(np.union1d(self.I, self.J)) #Checklist for checking if all contacts are plotted
-            s = checklist[0] #Starting vertex
-            contact = np.max(checklist)+1  #Start with an element that is for sure not in the checklist
-            
-            # For plotting
-            plt.figure() 
-            
-            # Create lists to store data from which origin and angle can be recovered
-            orr = []
-
-            # Create adjacency dictionary
-            self.adjacency_list(checklist)
-            
-            # Perform breadth first search
-            traversal_output, visited, level, parent = self.BFS(s)
-            
-            #Create empty list to store all the data
-            self.tiles = []
-            
-            for i in traversal_output:
-                # If all contacts have been plotted stop the code
-                if len(checklist)==0: break
-                
-                # Only execute when a contact has not been plotted
-                if i not in checklist: continue
-                   
-                # Remove contact from the checklist
-                checklist = checklist[checklist != i]    
-
-                # If we are not in the first iteration
-                if l>=1:
-                    # Get the contact via the parent node
-                    contact = parent[i]
-                    
-                    # Extract the origin coordinates
-                    for n in range(len(orr)):
-                        arr = orr[n]
-                        if arr[0]==contact:
-                            arr1 = arr[1]
-                            x = np.argwhere(arr1[:,0]==i).flatten()[0]
-                            n = (x+1)%len(arr1)
-                            xor1 = arr1[n,1]
-                            yor1 = arr1[n,2]
-                            break
-               
-                # Get contact data and force data for contact i
-                arg1, con1, data1 = self.contact(i, i=contact)
-                
-                # Plot and get force vector data
-                orr1 = self.vertices(data1, xor1, yor1, i)
-                
-                # Counter for amount of tiles
-                l+=1
-                
-                # Loop over all contacts
-                for k in range(len(con1)):
-                    # Skip is necesarry
-                    if con1[k] not in checklist: continue
-                    
-                    # Get contact data
-                    arg2, con2, data2 = self.contact(con1[k], i=i)
-                    
-                    # Get origin coordinates
-                    x = np.argwhere(orr1[:,0]==con1[k]).flatten()[0]
-                    n = (x+1)%len(con1)
-                    xor2 = orr1[n,1]
-                    yor2 = orr1[n,2]
-                    
-                    # Plot the result and get origin coordinates
-                    # orr1 = self.vertices(data1, xor1, yor1)
-                    orr2 = self.vertices(data2, xor2, yor2, con1[k])
-                    
-                    # Save data
-                    orr.append([con1[k],orr2])
-                    
-                    # Remove contact from the checklist
-                    checklist = checklist[checklist != con1[k]]
-                    
-                    # Counter for amount of tiles
-                    l+=1
-
-    #Function for plotting the tilings
-    def plotter(self, colorscheme, filled):    
         #Generate these colorschemes before the loop
         if colorscheme == 'random':
             colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(self.tiles))]
@@ -1006,14 +792,6 @@ class Analysis:
         #Only allow filled tiling for random and colorblind colorscheme
         if (colorscheme =='force' or colorscheme =='cluster') and filled:
             sys.exit('Only random and colorblind colorschemes are possible for filled tiling, exiting program.')
-
-        #If we want to plot the filled tiling
-        if filled:
-            fig = plt.figure()
-            ax = fig.gca()
-            #set by hand for saving figure
-            ax.set_xlim(-0.3,0.3)
-            ax.set_ylim(-0.3,0.3)
             
         #Loop over all tiles
         for n in range(len(self.tiles)):
@@ -1027,8 +805,7 @@ class Analysis:
                 #Remove contact point and return only vertex coordinates
                 for vertex in vertices:
                     del vertex[0]
-                ax.add_patch(ptch.Polygon(vertices, facecolor=colors[n%len(colors)], edgecolor=None, alpha=0.7))
-                #fig.savefig('tilingfilled.pdf')
+                axval.add_patch(ptch.Polygon(vertices, facecolor=colors[n%len(colors)], edgecolor=None, alpha=0.7))
             
             #Else plot edges
             if not filled:
@@ -1049,21 +826,26 @@ class Analysis:
                         colors = self.cluster_colors
                         label = int(self.pebbles.cluster[idx])
                         if label != -1:
-                            plt.plot([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=colors[label], marker='o')
+                            conlink = lne.Line2D([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=colors[label], marker='o')
+                            axval.add_line(conlink)
                         else:
-                            plt.plot([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=(0.65, 0.65, 0.65), marker='o')
+                            conlink = lne.Line2D([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=(0.65, 0.65, 0.65), marker='o')
+                            axval.add_line(conlink)
                     
                     elif colorscheme == 'force':
                         fscale = self.fgiven
                         Fcolor, Fmap = self.color_init(np.sqrt(np.amax(self.fn))/fscale) #Use fn or ftot?
                         fval = np.sqrt(self.fn[idx]/fscale)
-                        plt.plot([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=Fcolor(fval), lw=2*fval, marker='.')
+                        conlink = lne.Line2D([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=Fcolor(fval), lw=2*fval, marker='.')
+                        axval.add_line(conlink)
                         
                     elif colorscheme == 'random':
-                        plt.plot([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=colors[k], marker='o')
+                        conlink = lne.Line2D([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=colors[k], marker='o')
+                        axval.add_line(conlink)
                         
                     elif colorscheme == 'colorblind':
-                        plt.plot([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=colors[k%len(colors)], marker='o')
+                        conlink = lne.Line2D([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=colors[k%len(colors)], marker='o')
+                        axval.add_line(conlink)
                     
                     else: 
                         sys.exit('Not a valid color scheme, exiting program.')
@@ -1073,4 +855,5 @@ class Analysis:
         plt.xlabel(r'$F_x\ [N]$')
         plt.ylabel(r'$F_y\ [N]$')
         plt.axis('equal')
+        return fig
 

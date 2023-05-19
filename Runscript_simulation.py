@@ -31,10 +31,10 @@ if test:
     stop = 1
     step = 1
 else: 
-    #foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
-    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_phi0802_mu10_xi0.1/'
+    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
+    #foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_phi0802_mu10_xi0.1/'
     form = 'simulation'
-    start = 400 #410 is partially rigid for the large system
+    start = 1999 #410 is partially rigid for the large system
     stop = 2000
     step = stop-start
 
@@ -80,34 +80,35 @@ for k in range(start, stop, step):
     # This itself does very little, just creates an empty Hessian class
     # __init__(self,conf0):
     ThisHessian = HS.Hessian(ThisConf)
+    ThisTiling = TY.Tiling(ThisConf)
+    
+    #Make the Maxwell-Cremona tiling
+    ThisTiling.tile()
     
     ########## Have a look at some analysis functions of the rigid clusters
     #def __init__(self,conf0,pebbles0,hessian0,verbose=False):
-    ThisAnalysis=AN.Analysis(ThisConf,ThisPebble,ThisHessian,0.01,False)
+    ThisAnalysis=AN.Analysis(ThisConf,ThisPebble,ThisHessian,ThisTiling,0.01,False)
     # stress statistics
     zav,nm,pres,fxbal,fybal,torbal,mobin,mohist,sxx,syy,sxy,syx=ThisAnalysis.getStressStat()
     # cluster statistics
     frac,fracmax,lenx,leny=ThisAnalysis.clusterStatistics()
     #def plotStresses(self,plotCir,plotVel,plotCon,plotF,plotStress,**kwargs):
-    #fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
+    fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
     #def plotPebbles(self,plotCir,plotPeb,plotPebCon,plotClus,plotOver,**kwargs):
     #ThisAnalysis.plotPebbles(True,True,True,False,False)
-    #fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
+    fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
     
-    #Apply Maxwell cremona tiling
     #Plotting the contact network
-    #fig3 = ThisAnalysis.graph(False)
-    #plt.savefig('contact.pdf')
+    fig3 = ThisAnalysis.contactnetwork()
     
-    #Plotting the Maxwell cremona filing
-    #Colorscheme options: cluster, force, colorblind, random
-    ThisAnalysis.tile()
+    #Plotting Maxwell-Cremona tiling
+    #Colorscheme options filled = False: cluster, force, colorblind, random
+    #Colorscheme options filled = True: colorblind, random
     
-    #fig4 = ThisAnalysis.plotter(colorscheme='force', filled=False)
-    #fig5 = ThisAnalysis.plotter(colorscheme='cluster', filled=False)
-    fig6 = ThisAnalysis.plotter(colorscheme='random', filled=True)
+    fig4 = ThisAnalysis.tileplotter(colorscheme='force', filled=False)     
+    #Force color scheme does not make sense, for know we only determine the size of the force using the normal force. I think that the tangential force also needs to be used. 
+    fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
+    fig6 = ThisAnalysis.tileplotter(colorscheme='random', filled=True)
+    
 
-    
-    #Force color scheme does not make sense, for know we only determine the size of the force using the normal force.
-    #I think that the tangential force also needs to be used. 
 plt.show()
