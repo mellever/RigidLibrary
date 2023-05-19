@@ -6,7 +6,6 @@ This is my version of the Silke Henkes RigidLibrary adjusted for the annulus and
 - [x] Boundary conditions
 - [ ] Compute forces on the boundary particles --> for experiment
 - [x] Maxwell-Cremona tiling
-- [ ] Disjoint clusters Maxwell-Cremona tiling 
 
 
 
