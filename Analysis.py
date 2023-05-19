@@ -778,7 +778,8 @@ class Analysis:
     def vertices(self, data, xor, yor, i):
         # Create array for saving the data
         orr = np.zeros((len(data[:,0]),3))
-        coords = [[xor, yor]]
+        #add first coordinates to list
+        coords = [[i, xor, yor]]
         # Loop over the data array
         for k in range(len(data[:,0])):
             # Save data
@@ -795,7 +796,7 @@ class Analysis:
             yor+=fy
             
             #Add to list
-            coords.append([xor,yor])
+            coords.append([data[k,0], xor,yor])
             
         #Add to list for plotting
         self.tiles.append([i, coords])
@@ -993,53 +994,76 @@ class Analysis:
                     # Counter for amount of tiles
                     l+=1
 
-    def plotter(self, colorscheme, filled):
+    #Function for plotting the tilings
+    def plotter(self, colorscheme, filled):    
+        #Generate these colorschemes before the loop
+        if colorscheme == 'random':
+            colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(self.tiles))]
         
+        elif colorscheme == 'colorblind':
+            colors = ['#4477AA', '#66CCEE', '#228833', '#CCBB44', '#EE6677', '#AA3377', '#BBBBBB'] #Tol's color blind friendly color scheme
+        
+        #Only allow filled tiling for random and colorblind colorscheme
+        if (colorscheme =='force' or colorscheme =='cluster') and filled:
+            sys.exit('Only random and colorblind colorschemes are possible for filled tiling, exiting program.')
+
+        #If we want to plot the filled tiling
         if filled:
             fig = plt.figure()
             ax = fig.gca()
             #set by hand for saving figure
             ax.set_xlim(-0.3,0.3)
             ax.set_ylim(-0.3,0.3)
-            colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(len(self.tiles))]
-
-        for k in range(len(self.tiles)):
-            data = self.tiles[k]
+            
+        #Loop over all tiles
+        for n in range(len(self.tiles)):
+            #Retrieve data
+            data = self.tiles[n]
+            i = data[0]
             vertices = data[1]
             
+            #Plot filled tiles
             if filled:
-                ax.add_patch(ptch.Polygon(vertices, facecolor=colors[k], edgecolor=None, alpha=0.7))
-                fig.savefig('tilingfilled.pdf')
-                
+                #Remove contact point and return only vertex coordinates
+                for vertex in vertices:
+                    del vertex[0]
+                ax.add_patch(ptch.Polygon(vertices, facecolor=colors[n%len(colors)], edgecolor=None, alpha=0.7))
+                #fig.savefig('tilingfilled.pdf')
+            
+            #Else plot edges
             if not filled:
-                for i in range(len(vertices)-1):
+                for k in range(len(vertices)-1):
                     #Extract vertices
-                    vertex1 = vertices[i]
-                    vertex2 = vertices[i+1]
+                    vertex1 = vertices[k]
+                    vertex2 = vertices[k+1]
                     
-                    #Define colors
+                    #Extract contact and find corresponding index
+                    j = vertex2[0]
+                    arg = np.argwhere((self.I == i) & (self.J == j)).flatten()
+                    if len(arg) == 0:
+                        arg = np.argwhere((self.I == j) & (self.J == i)).flatten()
+                    idx = arg[0]
+                    
+                    #Define colors and plot
                     if colorscheme == 'cluster':
                         colors = self.cluster_colors
-                        label = int(self.pebbles.cluster[k[0]])
+                        label = int(self.pebbles.cluster[idx])
                         if label != -1:
-                            plt.plot([vertex1[0], vertex2[0]], [vertex1[1], vertex2[1]], color=colors[label], marker='o')
+                            plt.plot([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=colors[label], marker='o')
                         else:
-                            plt.plot([vertex1[0], vertex2[0]], [vertex1[1], vertex2[1]], color=(0.65, 0.65, 0.65), marker='o')
+                            plt.plot([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=(0.65, 0.65, 0.65), marker='o')
                     
                     elif colorscheme == 'force':
                         fscale = self.fgiven
-                        Fcolor, Fmap = self.color_init(np.sqrt(np.amax(self.fn))/fscale)
-                        fval = np.sqrt(self.fn[k[0]]/fscale)
-                        plt.plot([vertex1[0], vertex2[0]], [vertex1[1], vertex2[1]], color=Fcolor(fval), lw=2*fval, marker='.')
+                        Fcolor, Fmap = self.color_init(np.sqrt(np.amax(self.fn))/fscale) #Use fn or ftot?
+                        fval = np.sqrt(self.fn[idx]/fscale)
+                        plt.plot([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=Fcolor(fval), lw=2*fval, marker='.')
                         
-                    
                     elif colorscheme == 'random':
-                        colors = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(self.N)]
-                        plt.plot([vertex1[0], vertex2[0]], [vertex1[1], vertex2[1]], color=colors[data[k,0].astype(int)], marker='o')
+                        plt.plot([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=colors[k], marker='o')
                         
                     elif colorscheme == 'colorblind':
-                        colors = ['#4477AA', '#66CCEE', '#228833', '#CCBB44', '#EE6677', '#AA3377', '#BBBBBB'] #Tol's color blind friendly color scheme
-                        plt.plot([vertex1[0], vertex2[0]], [vertex1[1], vertex2[1]], color=colors[k[0]], marker='o')
+                        plt.plot([vertex1[1], vertex2[1]], [vertex1[2], vertex2[2]], color=colors[k%len(colors)], marker='o')
                     
                     else: 
                         sys.exit('Not a valid color scheme, exiting program.')

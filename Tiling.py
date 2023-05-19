@@ -34,7 +34,6 @@ class Tiling:
                     if verbose0: plt.annotate(k, (x1,y1))
                 if verbose0: plt.annotate(i, (x0,y0))
             plt.title("Contact Network")
-            plt.show()
     
     #Function that plots tile and returns plotted points
     def plotter(self, data, xor, yor, color, zorder, ls, arrow):

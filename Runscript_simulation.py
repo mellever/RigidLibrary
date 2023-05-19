@@ -31,10 +31,10 @@ if test:
     stop = 1
     step = 1
 else: 
-    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
-    #foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_phi0802_mu10_xi0.1/'
+    #foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
+    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_phi0802_mu10_xi0.1/'
     form = 'simulation'
-    start = 1999 #410 is partially rigid for the large system
+    start = 400 #410 is partially rigid for the large system
     stop = 2000
     step = stop-start
 
@@ -89,7 +89,7 @@ for k in range(start, stop, step):
     # cluster statistics
     frac,fracmax,lenx,leny=ThisAnalysis.clusterStatistics()
     #def plotStresses(self,plotCir,plotVel,plotCon,plotF,plotStress,**kwargs):
-    fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
+    #fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
     #def plotPebbles(self,plotCir,plotPeb,plotPebCon,plotClus,plotOver,**kwargs):
     #ThisAnalysis.plotPebbles(True,True,True,False,False)
     #fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
@@ -97,13 +97,16 @@ for k in range(start, stop, step):
     #Apply Maxwell cremona tiling
     #Plotting the contact network
     #fig3 = ThisAnalysis.graph(False)
+    #plt.savefig('contact.pdf')
     
     #Plotting the Maxwell cremona filing
     #Colorscheme options: cluster, force, colorblind, random
     ThisAnalysis.tile()
-    fig4 = ThisAnalysis.plotter(colorscheme='force', filled=True)
     
-    #fig5 = ThisAnalysis.tile(colorscheme='cluster')
+    #fig4 = ThisAnalysis.plotter(colorscheme='force', filled=False)
+    #fig5 = ThisAnalysis.plotter(colorscheme='cluster', filled=False)
+    fig6 = ThisAnalysis.plotter(colorscheme='random', filled=True)
+
     
     #Force color scheme does not make sense, for know we only determine the size of the force using the normal force.
     #I think that the tangential force also needs to be used. 
