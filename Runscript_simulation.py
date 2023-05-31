@@ -93,22 +93,23 @@ for k in range(start, stop, step):
     # cluster statistics
     frac,fracmax,lenx,leny=ThisAnalysis.clusterStatistics()
     #def plotStresses(self,plotCir,plotVel,plotCon,plotF,plotStress,**kwargs):
-    fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
+    #fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
     #def plotPebbles(self,plotCir,plotPeb,plotPebCon,plotClus,plotOver,**kwargs):
     #ThisAnalysis.plotPebbles(True,True,True,False,False)
-    fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
+    #fig2 = ThisAnalysis.plotPebbles(True,False,False,True,False)
     
     #Plotting the contact network
-    fig3 = ThisAnalysis.contactnetwork()
+    #fig3 = ThisAnalysis.contactnetwork()
     
     #Plotting Maxwell-Cremona tiling
     #Colorscheme options filled = False: cluster, force, colorblind, random
     #Colorscheme options filled = True: colorblind, random
     
-    fig4 = ThisAnalysis.tileplotter(colorscheme='force', filled=False)     
+    #fig4 = ThisAnalysis.tileplotter(colorscheme='force', filled=False)     
     #Force color scheme does not make sense, for know we only determine the size of the force using the normal force. I think that the tangential force also needs to be used. 
-    fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
+    #fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
     fig6 = ThisAnalysis.tileplotter(colorscheme='random', filled=True)
+
     
 
 plt.show()

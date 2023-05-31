@@ -6,6 +6,7 @@ import Configuration as CF
 import Pebbles as PB
 import Hessian as HS
 import Analysis as AN
+import Tiling as TY
 
 import matplotlib.pyplot as plt
 
@@ -64,10 +65,11 @@ for experiment in experiment_nums:
                         # This itself does very little, just creates an empty Hessian class
                         # __init__(self,conf0):
                         ThisHessian = HS.Hessian(ThisConf)
+                        ThisTiling = 'skip'
                         
                         ########## Have a look at some analysis functions of the rigid clusters
                         #def __init__(self,conf0,pebbles0,hessian0,verbose=False):
-                        ThisAnalysis=AN.Analysis(ThisConf,ThisPebble,ThisHessian,0.01,False)
+                        ThisAnalysis=AN.Analysis(ThisConf,ThisPebble,ThisHessian, ThisTiling, 0.01,False)
                         # stress statistics
                         zav,nm,pres,fxbal,fybal,torbal,mobin,mohist,sxx,syy,sxy,syx=ThisAnalysis.getStressStat()
                         # cluster statistics
@@ -125,5 +127,4 @@ for experiment in experiment_nums:
                         #    # D2_min, needs assessment
                         #    fig7 = ThisAnalysis.DisplacementCorrelateD2min(True)
                         """                      
-                        
 plt.show()       

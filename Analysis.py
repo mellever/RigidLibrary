@@ -71,7 +71,8 @@ class Analysis:
         self.fn = self.conf.fnor
         self.ft = self.conf.ftan
         self.ftot = np.sqrt(np.square(self.fn)+np.square(self.ft)) #Use this for color scheme forces?
-        self.tiles = self.tiling.tiles
+        if self.tiling != 'skip':
+            self.tiles = self.tiling.tiles
         
         
         

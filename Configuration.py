@@ -886,7 +886,7 @@ class Configuration:
                     fnor0=ftotx*nx0+ftoty*ny0
                     ftan0=ftotx*(-ny0)+ftoty*nx0
 
-                else: fnor0 = ftan0 = nx0 = ny0 = 1
+                else: fnor0 = ftan0 = nx0 = ny0 = 0 #Should this be zero?
                 
                 #Add data to list
                 fnor_add.append(fnor0)

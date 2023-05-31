@@ -164,7 +164,7 @@ class Tiling:
             
             # Create lists to store data from which origin and angle can be recovered
             orr = []
-
+            
             # Create adjacency dictionary
             self.adjacency_list(checklist)
             

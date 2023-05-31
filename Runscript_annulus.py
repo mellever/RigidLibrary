@@ -6,6 +6,7 @@ import Configuration as CF
 import Pebbles as PB
 import Hessian as HS
 import Analysis as AN
+import Tiling as TY
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,7 +22,7 @@ mu=0.3
 datatype = 'experiment_annulus'
 
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
-experiment_nums=['5']
+experiment_nums=['6']
 
 # Loop over experiment
 for experiment in experiment_nums:
@@ -36,7 +37,7 @@ for experiment in experiment_nums:
             continue
         
         
-        nsteps=1
+        #nsteps=1
         # Loop over strain steps for a given experiment
         # Start at 1 since steps start at 1. Ends at nsteps.
         for u in range(1, nsteps+1):
@@ -69,26 +70,29 @@ for experiment in experiment_nums:
                 # This itself does very little, just creates an empty Hessian class
                 # __init__(self,conf0):
                 ThisHessian = HS.Hessian(ThisConf)
+                ThisTiling = TY.Tiling(ThisConf)
+    
+                #Make the Maxwell-Cremona tiling
+                ThisTiling.tile()
                 
                 ########## Have a look at some analysis functions of the rigid clusters
                 #def __init__(self,conf0,pebbles0,hessian0,verbose=False):
-                ThisAnalysis=AN.Analysis(ThisConf,ThisPebble,ThisHessian,0.01,False)
+                ThisAnalysis=AN.Analysis(ThisConf,ThisPebble,ThisHessian,ThisTiling,0.01,False)
                 # stress statistics
                 #zav,nm,pres,fxbal,fybal,torbal,mobin,mohist,sxx,syy,sxy,syx=ThisAnalysis.getStressStat()
                 # cluster statistics
                 frac,fracmax,lenx,leny=ThisAnalysis.clusterStatistics()
                 #def plotStresses(self,plotCir,plotVel,plotCon,plotF,plotStress,**kwargs):
-                #fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
+                fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
                 #def plotPebbles(self,plotCir,plotPeb,plotPebCon,plotClus,plotOver,**kwargs):
                 #ThisAnalysis.plotPebbles(True,True,True,False,False)
                 
                 #Plot pebbles has the following arguments: plotCir,plotPeb,plotPebCon,plotClus,plotOver
                 #fig1 = ThisAnalysis.plotPebbles(True,True,True,True,False)
                 fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
-                #fig3 = ThisAnalysis.plotPebbles(True,True,False,True,False)
+                #fig3 = ThisAnalysis.plotPebbles(True,True,False,False,False)
                 #For saving the plot as plot.pickle
                 #pickle.dump(fig2, open('plot.pickle', 'wb')) # This is for Python 3 - py2 may need `file` instead of `open`
-                #fig2 = ThisAnalysis.plotPebbles(True,True,True,True,False)
                 """
                 ######### continuing with the Hessian now 
                 # constructing the matrix
@@ -120,10 +124,29 @@ for experiment in experiment_nums:
                 #    print (P_disp_if_pebble,P_pebble_if_disp)
                 #    # D2_min, needs assessment
                 #    fig7 = ThisAnalysis.DisplacementCorrelateD2min(True) 
-                """
-                #For saving high resolution images
-                #fig2.set_size_inches(50,50)
-                #fig2.savefig('plot5.pdf', dpi=100)  
                 
-                plt.show()
-                                           
+                #Plotting the contact network
+                #fig3 = ThisAnalysis.contactnetwork()
+                """
+                #Plotting Maxwell-Cremona tiling
+                #Colorscheme options filled = False: cluster, force, colorblind, random
+                #Colorscheme options filled = True: colorblind, random
+                
+                #fig4 = ThisAnalysis.tileplotter(colorscheme='force', filled=False)     
+                #Force color scheme does not make sense, for know we only determine the size of the force using the normal force. I think that the tangential force also needs to be used. 
+                fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
+                fig6 = ThisAnalysis.tileplotter(colorscheme='random', filled=True)
+                
+                #For saving high resolution images
+                fig1.set_size_inches(50,50)
+                fig1.savefig('/home/melle/Documents/Code/Plots/data2305/with_boundary/force/step'+str(u)+'.pdf', dpi=100)  
+                
+                fig2.set_size_inches(50,50)
+                fig2.savefig('/home/melle/Documents/Code/Plots/data2305/with_boundary/pebble/step'+str(u)+'.pdf', dpi=100)  
+                
+                fig5.set_size_inches(50,50)
+                fig5.savefig('/home/melle/Documents/Code/Plots/data2305/with_boundary/tiles_pebble/step'+str(u)+'.pdf', dpi=100)  
+                
+                fig6.set_size_inches(50,50)
+                fig6.savefig('/home/melle/Documents/Code/Plots/data2305/with_boundary/tiles/step'+str(u)+'.pdf', dpi=100)  
+                                        
