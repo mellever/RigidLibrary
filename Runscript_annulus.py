@@ -45,17 +45,10 @@ for experiment in experiment_nums:
                 ThisConf = CF.Configuration(topdir+experiment,datatype, mu, u)
                 
                 #Reading in the data
-                ThisConf.ReadExpdataAnnulusNumpy(verbose=False)
-
-                #Adding smart contacts
-                #ThisConf.AddSmartContacts(dmax=1000, ang=4*np.pi, threshold=0.0001)
+                ThisConf.ReadExpdataAnnulus(verbose=False)
                 
                 #Adding boundary contacts, passsing threshold argument is possible
                 ThisConf.AddBoundaryContactsAnnulus()
-                
-                #Adding random contacts
-                #ThisConf.AddRandomContacts(percent=50, dmax=200)
-
                 
                 #Setting up and playing the pebble game
                 ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
@@ -68,8 +61,9 @@ for experiment in experiment_nums:
 
                 ########### Setting up the dynamical matrix and getting eigenmodes
                 # This itself does very little, just creates an empty Hessian class
-                # __init__(self,conf0):
                 ThisHessian = HS.Hessian(ThisConf)
+                
+                #Create tiling class
                 ThisTiling = TY.Tiling(ThisConf)
     
                 #Make the Maxwell-Cremona tiling
@@ -88,11 +82,12 @@ for experiment in experiment_nums:
                 #ThisAnalysis.plotPebbles(True,True,True,False,False)
                 
                 #Plot pebbles has the following arguments: plotCir,plotPeb,plotPebCon,plotClus,plotOver
-                #fig1 = ThisAnalysis.plotPebbles(True,True,True,True,False)
+                #fig1 = ThisAnalysis.plotPebbles(True,True,True,False,False)
                 fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
                 #fig3 = ThisAnalysis.plotPebbles(True,True,False,False,False)
                 #For saving the plot as plot.pickle
                 #pickle.dump(fig2, open('plot.pickle', 'wb')) # This is for Python 3 - py2 may need `file` instead of `open`
+                
                 """
                 ######### continuing with the Hessian now 
                 # constructing the matrix
@@ -127,7 +122,7 @@ for experiment in experiment_nums:
                 
                 #Plotting the contact network
                 #fig3 = ThisAnalysis.contactnetwork()
-                """
+                
                 #Plotting Maxwell-Cremona tiling
                 #Colorscheme options filled = False: cluster, force, colorblind, random
                 #Colorscheme options filled = True: colorblind, random
@@ -137,16 +132,18 @@ for experiment in experiment_nums:
                 fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
                 fig6 = ThisAnalysis.tileplotter(colorscheme='random', filled=True)
                 
+                
                 #For saving high resolution images
-                fig1.set_size_inches(50,50)
-                fig1.savefig('/home/melle/Documents/Code/Plots/data2305/with_boundary/force/step'+str(u)+'.pdf', dpi=100)  
+                fig1.set_size_inches(15,15)
+                fig1.savefig('/home/melle/Documents/Code/Plots/data0206/with_boundary/force/step'+str(u)+'.png', dpi=100)  
                 
-                fig2.set_size_inches(50,50)
-                fig2.savefig('/home/melle/Documents/Code/Plots/data2305/with_boundary/pebble/step'+str(u)+'.pdf', dpi=100)  
+                fig2.set_size_inches(15,15)
+                fig2.savefig('/home/melle/Documents/Code/Plots/data0206/with_boundary/pebble/step'+str(u)+'.png', dpi=100)  
                 
-                fig5.set_size_inches(50,50)
-                fig5.savefig('/home/melle/Documents/Code/Plots/data2305/with_boundary/tiles_pebble/step'+str(u)+'.pdf', dpi=100)  
+                fig5.set_size_inches(15,15)
+                fig5.savefig('/home/melle/Documents/Code/Plots/data0206/with_boundary/tiles_pebble/step'+str(u)+'.png', dpi=100)  
                 
-                fig6.set_size_inches(50,50)
-                fig6.savefig('/home/melle/Documents/Code/Plots/data2305/with_boundary/tiles/step'+str(u)+'.pdf', dpi=100)  
-                                        
+                fig6.set_size_inches(15,15)
+                fig6.savefig('/home/melle/Documents/Code/Plots/data0206/with_boundary/tiles/step'+str(u)+'.png', dpi=100)                     
+                """
+                plt.show()

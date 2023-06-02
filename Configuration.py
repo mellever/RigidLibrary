@@ -248,109 +248,8 @@ class Configuration:
                             self.y -= self.L*np.round(self.y/self.L)
                         self.ncon = len(self.I)
         #========== Experimental data read-in for annulus ==================
-        def ReadExpdataAnnulusPandas(self, verbose):
-                prefix = self.folder +'/particle_positions.txt'
-                try:
-                    #read in data of following format:
-                    #framenumber, particle id, x, y, radius, boundary
-                    pos_data = pandas.read_csv(prefix, names=['n','id', 'x', 'y', 'r', 'b'])
-                    pos_data = pos_data[pos_data['n'] == self.step]
-                    self.id = pos_data.loc[:,'id'].to_numpy()
-                    self.x = pos_data.loc[:,'x'].to_numpy()
-                    self.y = pos_data.loc[:,'y'].to_numpy()
-                    self.rad = pos_data.loc[:,'r'].to_numpy()
-                    self.boundary = pos_data.loc[:,'b'].to_numpy()
-                    self.N = len(self.rad)
-                    self.Lx = np.amax(self.x)-np.amin(self.x)
-                    self.Ly = np.amax(self.y)-np.amin(self.y)
-                except:
-                    self.x = 0
-                    self.y = 0
-                    self.rad = 1  # purely so that we can divide by it ...
-                    self.N = 0
-                    print("Error: there is no position data here")
-                    return 1
-                
-                prefix = self.folder +'/Adjacency_list.txt'
-                try:
-                    #read in data of following format:
-                    #framenumber, id1, id2, ft, fn
-                    con_data = pandas.read_csv(prefix, names=['n', 'id1', 'id2', 'ft', 'fn'])
-                    #length of previous framenumer
-                    if self.step == 1:
-                        len_prev = 0
-                    else:
-                        len_prev = len(con_data[con_data['n'] <= self.step-1]['id1'])
-                    #data for current framenumber
-                    con_data= con_data[con_data['n'] == self.step]
-                    
-                except:
-                    print("Error: there is no contact data here")
-                    return 1
-                            
-                #Temporary
-                con_frame = con_data
-                
-                #Create lists
-                self.I=[]
-                self.J=[]
-                fn0=[]
-                ft0=[]
-                fm0=[]                   
-
-                #Filter entries and determine if slipping or not
-                for k in range(len_prev, len_prev + len(con_frame['id1'])):    
-                    try:
-                        #Add particle id's, identified by indices, to list.
-                        i = con_frame['id1'][k]
-                        j = con_frame['id2'][k]
-                        argi = np.argwhere(self.id == i).flatten()[0]
-                        argj = np.argwhere(self.id == j).flatten()[0]
-                        self.I.append(argi)
-                        self.J.append(argj)
-                        
-                        # Search other force and take the mean, might not be relevant.
-                        norm2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['fn'].iloc[0]
-                        tan2 = con_frame[ (con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])]['ft'].iloc[0]
-                        norm = (con_frame['fn'][k] + norm2)/2
-                        tan = (con_frame['ft'][k] + tan2)/2
-                        
-                        fn0.append(norm)
-                        ft0.append(tan)
-                        if (abs(tan)/norm>self.mu):
-                            fm0.append(1)
-                        else:
-                            fm0.append(0)
-                        #Now delete corresponding entry to remove duplicates. 
-                        #Check: len(self.I) = (#True in dups_bool)/2 + (#False in dups_bool)
-                        con_frame.drop(con_frame[(con_frame['id1']==con_frame['id2'][k]) & (con_frame['id2']==con_frame['id1'][k])].index, inplace=True)
-                    except:
-                        if verbose:
-                            print('dropped duplicate')
-                                  
-                #Final arrays
-                self.ncon=len(fm0)
-                self.I = np.array(self.I)
-                self.J = np.array(self.J)
-                self.fnor=np.array(fn0)
-                self.ftan=np.array(ft0)
-                self.fullmobi=np.array(fm0)
-
-                self.nx=np.zeros(self.ncon)
-                self.ny=np.zeros(self.ncon)
-                for k in range(self.ncon):
-                        x1=self.x[self.I[k]]
-                        y1=self.y[self.I[k]]
-                        x2=self.x[self.J[k]]
-                        y2=self.y[self.J[k]]
-                        rij=np.sqrt((x1-x2)**2+(y1-y2)**2)
-                        self.nx[k]=(x2-x1)/rij
-                        self.ny[k]=(y2-y1)/rij
-                
-                print("Config frame #" +str(self.step)+ " created")      
-                return 0
-        
-        def ReadExpdataAnnulusNumpy(self, verbose):    
+       
+        def ReadExpdataAnnulus(self, verbose):    
                 prefix = self.folder +'/particle_positions.txt'
                 try:
                     coords=np.loadtxt(prefix, delimiter=',')
@@ -406,6 +305,9 @@ class Configuration:
                         argi = np.argwhere(self.id == i).flatten()[0]
                         argj = np.argwhere(self.id == j).flatten()[0]
                         
+                        
+                        #For now we identify particle id's with indices in the list. Not ideal for debugging, but it works.
+                        #Can be fixed if necessary, see commented code below for a start.
                         """
                         #self.I.append(i)
                         #self.J.append(j)
@@ -413,8 +315,7 @@ class Configuration:
                         self.argJ.append(argj)
                         """
                         
-                        #For now we identify particle id's with indices in the list. Not ideal for debugging, but it works.
-                        #Can be fixed if necessary, see above code for start. 
+                        
                         self.I.append(argi)
                         self.J.append(argj)
                         
@@ -451,50 +352,6 @@ class Configuration:
 
                 print("Config frame #" +str(self.step)+ " created")      
                 return 0
-        
-        
-        
-        #========== Maxwell Cremona tiling -> port this to its own class ==================
-        def Tiling(self, graph, tiling):
-            #Plotting the graph
-            if graph:
-                for i in self.I:
-                    for k in self.J[self.I==i]:
-                        x0, x1, y0, y1 = getConPos2(i, k)
-                        plt.plot([x0, x1], [y0, y1])
-                    break
-            plt.show()
-            
-            #Plotting the Maxwell Cremona tiling
-            if tiling:
-                color = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(np.max(self.I)+1)]
-                for i in self.I:
-                    #Scaling parameter, remove later
-                    scale = 1000
-                    #Origin coordinates
-                    xor = self.x[i]
-                    yor = self.y[i]
-                    #Determine contacts
-                    x = np.argwhere(self.J==i).flatten()
-                    y = np.argwhere(self.I==i).flatten()
-                    print(y)
-                    z = np.concatenate([x,y])
-                    xhat = self.J[y]
-                    yhat = self.I[x]
-                    zhat = np.concatenate([xhat,yhat])
-                    #Plot
-                    for k in range(len(z)):
-                        theta = np.arctan2(self.y[i]-self.y[zhat[k]], self.x[i]-self.x[zhat[k]])
-                        fx = scale*self.fnor[z[k]]*np.cos(theta)
-                        fy = scale*self.fnor[z[k]]*np.sin(theta)
-                        print(i,k,theta, self.fnor[z[k]])
-                        plt.arrow(xor, yor, fx, fy, width=.08, facecolor=color[i])
-                        #plt.plot([xor, xor+fx], [yor, yor+fy])
-                        xor += fx
-                        yor += fy
-                plt.show()                
-
-
 
          #========== Experimental data read-in for square ==================
         def ReadExpdataSquare(self,numlabel):    
@@ -729,101 +586,6 @@ class Configuration:
             self.ncon=len(self.I)
             self.N+=4
             print ("Added boundaries!")
-        
-        #### ======================== Boundary integration =======================================================
-        def AddBoundaryContactsAnnulus2(self,threshold=30):
-            # For getting positions
-            self.addBoundaryAnnulus=True
-
-            #Set radius of boundary particles
-            #This needs some tweaking, since we are working with innies instead of outies. 
-            Brad = self.texture
-            
-            # Boundary positions:
-            # Coordinates of virtual boundary particles: at mid_x and y one Brad off from radi
-            b1 = self.mid_y + self.R1 - Brad
-            b2 = self.mid_y + self.R2 + Brad
-                        
-            # Coordinates of virtual boundary particles: in the middle, one Brad off from the edge of the outermost particle
-            Boundaries=np.zeros((2,3)) # Two boundary particles with their x,y and rad
-            Boundaries[0,:]=[self.mid_x,b1,Brad]
-            Boundaries[1,:]=[self.mid_x,b2,Brad]
-            
-            # Find the particles in contact with the boundary, and label correctly
-            self.bindices=[self.N,self.N+1]
-            padd=[]
-            labels=[]
-            
-            #Distance of points from the center of the annulus
-            r = np.sqrt(np.square(self.x- self.mid_x)+np.square(self.y-self.mid_y))
-            p1 =  np.nonzero(np.abs(r - self.R1 - self.rad)<threshold)[0]
-            padd.extend(p1)
-            labels.extend([0 for k in range(len(p1))])
-            p2 =  np.nonzero(np.abs(self.R2 - r - self.rad)<threshold)[0]
-            padd.extend(p2)
-            labels.extend([1 for k in range(len(p2))])
-            
-            #Some arrays for the information of the newly introduced contacts
-            fullmobi_add=[]
-            fnor_add=[]
-            ftan_add=[]
-            nx_add=[]
-            ny_add=[]
-            for k in range(len(padd)):
-                self.I = np.append(self.I, self.bindices[labels[k]])
-                self.J = np.append(self.J, padd[k])
-                neii=np.nonzero(self.I[:self.ncon]==padd[k])[0]
-                neij=np.nonzero(self.J[:self.ncon]==padd[k])[0]
-
-                #Always add double bound
-                fullmobi_add.append(0)
-                
-                #Compute forces if neighbours are present
-                if (len(neii)>0 or len(neij)>0):
-                    # Flip direction of force, is this correct?
-                    nx0 = ny0 = -1
-
-                    # Compute force on this contact by force balance
-                    # Two minus signs on second part cancel out
-                    ftotx=np.sum(self.fnor[neii]*self.nx[neii]-self.ftan[neii]*self.ny[neii])-np.sum(self.fnor[neij]*self.nx[neij]-self.ftan[neij]*self.ny[neij])
-                    ftoty=np.sum(self.fnor[neii]*self.ny[neii]+self.ftan[neii]*self.nx[neii])-np.sum(self.fnor[neij]*self.ny[neij]+self.ftan[neij]*self.nx[neij])
-                    fnor0=ftotx*nx0+ftoty*ny0
-                    ftan0=ftotx*(-ny0)+ftoty*nx0
-
-                else: fnor0 = ftan0 = nx0 = ny0 = 1
-                
-                #Add data to list
-                fnor_add.append(fnor0)
-                ftan_add.append(ftan0)
-                nx_add.append(nx0)
-                ny_add.append(ny0)
-            
-            #Add slipping contact between the two boundary particles
-            self.I = np.append(self.I, self.bindices[0])
-            self.J = np.append(self.J, self.bindices[1])
-            fullmobi_add.append(1)
-
-            #Forces between boundary particles are zero?
-            fnor0 = ftan0 = nx0 = ny0 = 0
-
-            #Add to lists
-            fnor_add.append(fnor0)
-            ftan_add.append(ftan0)
-            nx_add.append(nx0)
-            ny_add.append(ny0)
-
-            # Finally stick it at the end of the existing data
-            self.x=np.concatenate((self.x,Boundaries[:,0]))
-            self.y=np.concatenate((self.y,Boundaries[:,1]))
-            self.rad=np.concatenate((self.rad,Boundaries[:,2]))
-            self.fnor=np.concatenate((self.fnor,np.array(fnor_add)))
-            self.ftan=np.concatenate((self.ftan,np.array(ftan_add)))
-            self.fullmobi=np.concatenate((self.fullmobi,np.array(fullmobi_add)))
-            self.nx=np.concatenate((self.nx,np.array(nx_add)))
-            self.ny=np.concatenate((self.ny,np.array(ny_add)))
-            self.ncon=len(self.I)
-            self.N+=2 #Since we have two boundary particles
-            print ("Added boundaries!")
 
         #### ======================== Boundary integration =======================================================
         def AddBoundaryContactsAnnulus(self):
@@ -876,8 +638,17 @@ class Configuration:
                 
                 #Compute forces if neighbours are present
                 if (len(neii)>0 or len(neij)>0):
-                    # Flip direction of force, is this correct?
-                    nx0 = ny0 = -1
+                    #Compute angle of particle
+                    ang = np.arctan2(self.y[padd[k]], self.x[padd[k]])
+                    #If in contact with inner boundary
+                    if (labels[k])==0:
+                        nx0=-np.cos(ang)
+                        ny0=-np.sin(ang)
+                    
+                    #If in contact with outer boundary
+                    elif (labels[k]==1):
+                        nx0=np.cos(ang)
+                        ny0=np.sin(ang)
 
                     # Compute force on this contact by force balance
                     # Two minus signs on second part cancel out
@@ -921,165 +692,6 @@ class Configuration:
             self.ncon=len(self.I)
             self.N+=2 #Since we have two boundary particles
             print ("Added boundaries!")
-
-        def AddRandomContacts(self, percent, dmax):         
-            #Create empty lists for storing data
-            fullmobi_add=[]
-            fnor_add=[]
-            ftan_add=[]
-            nx_add=[]
-            ny_add=[]
-            
-            #Choose amount of particles random number in [1,100]
-            nums = np.random.randint(1,100,len(self.x))
-
-            #Loop over all particles
-            for i in range(len(self.x)):
-                #If number less than percent add bond, else continue
-                if nums[i] >= percent: continue 
-                
-                #Loop over contacts in proximity
-                for n in range(1,7):
-                    skip = False
-                    #Compute distance between particles
-                    diffarr = np.sqrt(np.square(self.x-self.x[i])+np.square(self.y-self.y[i]))
-                    #Take n'th smallest distance
-                    diff = np.sort(diffarr)[n]
-                    if diff >= dmax:
-                        skip = True
-                        break 
-                    #Find corresponding index
-                    arg = np.argwhere(diffarr == diff).flatten()[0] 
-                    
-                    #Only add new bonds
-                    if arg in self.J[np.argwhere(self.I == i)].flatten():
-                        skip = True
-                        continue
-                    if arg in self.I[np.argwhere(self.J == i)].flatten():
-                        skip = True
-                        continue
-                
-                #If distance is to large, do not add
-                if skip:
-                    continue
-                
-                #Append to contacts
-                self.I = np.append(self.I, i)
-                self.J = np.append(self.J, arg)
-                neii=np.nonzero(self.I[:self.ncon]==arg)[0]
-                neij=np.nonzero(self.J[:self.ncon]==arg)[0]
-
-                #Always add double bound
-                fullmobi_add.append(0)
-                
-                #Compute forces if neighbours are present
-                if (len(neii)>0 or len(neij)>0):
-                    # Flip direction of force, is this correct?
-                    nx0 = ny0 = -1
-
-                    # Compute force on this contact by force balance
-                    # Two minus signs on second part cancel out
-                    ftotx=np.sum(self.fnor[neii]*self.nx[neii]-self.ftan[neii]*self.ny[neii])-np.sum(self.fnor[neij]*self.nx[neij]-self.ftan[neij]*self.ny[neij])
-                    ftoty=np.sum(self.fnor[neii]*self.ny[neii]+self.ftan[neii]*self.nx[neii])-np.sum(self.fnor[neij]*self.ny[neij]+self.ftan[neij]*self.nx[neij])
-                    fnor0=ftotx*nx0+ftoty*ny0
-                    ftan0=ftotx*(-ny0)+ftoty*nx0
-
-                else: fnor0 = ftan0 = nx0 = ny0 = 1
-                #Add data to list
-                fnor_add.append(fnor0)
-                ftan_add.append(ftan0)
-                nx_add.append(nx0)
-                ny_add.append(ny0)
-            
-            #Add everything to existing arrays
-            self.fnor=np.concatenate((self.fnor,np.array(fnor_add)))
-            self.ftan=np.concatenate((self.ftan,np.array(ftan_add)))
-            self.fullmobi=np.concatenate((self.fullmobi,np.array(fullmobi_add)))
-            self.nx=np.concatenate((self.nx,np.array(nx_add)))
-            self.ny=np.concatenate((self.ny,np.array(ny_add)))
-            self.ncon=len(self.I)
-            print("Added Random Bonds")
-                
-
-        def AddSmartContacts(self,dmax,ang, threshold):         
-            #Create empty lists for storing data
-            fullmobi_add=[]
-            fnor_add=[]
-            ftan_add=[]
-            nx_add=[]
-            ny_add=[]
-                    
-            #Loop over all particles
-            for i in self.I:
-                #Determine indices of contacts and put together in one array
-                argI = np.argwhere(self.I==i).flatten()
-                argJ = np.argwhere(self.J==i).flatten()
-                arg = np.concatenate([argI,argJ])
-                #Get particle ids from indices and put together in one array
-                I = self.I[argI]
-                J = self.J[argJ]
-                con = np.concatenate([I,J])
-                
-                #Define starting values forces
-                fx = fy = 0
-                
-                #Loop over all contacts and compute total force
-                for k in con:
-                    #if k != k%self.ncon: print('warning')
-                    k = int(k%len(self.fnor))
-                                
-                    #Compute components of forces
-                    if k in J:
-                        fx-=self.fnor[k]*self.nx[k]+self.ftan[k]*self.ny[k]
-                        fy-=self.fnor[k]*self.ny[k]-self.ftan[k]*self.nx[k]
-                    else:
-                        fx+=self.fnor[k]*self.nx[k]+self.ftan[k]*self.ny[k]
-                        fy+=self.fnor[k]*self.ny[k]-self.ftan[k]*self.nx[k]
-                
-                ftot = np.sqrt(np.square(fx)+ np.square(fy))
-
-                
-                if ftot > threshold:                  
-                    #Compute angle needed for new contact
-                    theta = (np.tan(fy/fx) + np.pi)%(2*np.pi)
-                    angles = np.arctan2(self.x - self.x[i], self.y-self.y[i])
-                    for k in range(len(angles)):
-                        if angles[k] > theta + ang or angles[k] < theta - ang:
-                            continue
-                        if np.sqrt(np.square(self.x[k])+ np.square(self.y[k])) < dmax:
-                            print("adding smart bond")
-                            #Find correct index
-                            j = int(self.id[k])
-                            #Append to contacts
-                            self.I = np.append(self.I, i)
-                            self.J = np.append(self.J, j)
-
-                            #Always add double bound
-                            fullmobi_add.append(0)
-                            
-                            #Compute forces, this needs to be changed.
-                            fnor0 = 1
-                            ftan0 = 1
-                            nx0 = 1
-                            ny0 = 1
-                            
-                            #Add data to list
-                            fnor_add.append(fnor0)
-                            ftan_add.append(ftan0)
-                            nx_add.append(nx0)
-                            ny_add.append(ny0)
-                
-            
-            #Add everything to existing arrays
-            self.fnor=np.concatenate((self.fnor,np.array(fnor_add)))
-            self.ftan=np.concatenate((self.ftan,np.array(ftan_add)))
-            self.fullmobi=np.concatenate((self.fullmobi,np.array(fullmobi_add)))
-            self.nx=np.concatenate((self.nx,np.array(nx_add)))
-            self.ny=np.concatenate((self.ny,np.array(ny_add)))
-            self.ncon=len(self.I)
-            print("Added Smart Bonds")               
-                    
-            
 
         def AddNextBoundaryContacts(self,threshold=15,Brad=20.0):
             # Threshold to check if a particle is close enough to walls.

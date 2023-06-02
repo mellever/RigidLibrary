@@ -34,6 +34,7 @@ from queue import Queue
 
 # This does need all the plotting libraries
 from scipy.interpolate import interp1d
+from collections import Counter
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as ptch
@@ -198,6 +199,10 @@ class Analysis:
         else:
             return fig
 
+    def cluster_sorter(self):
+        
+        return labels
+    
     # =============== pebble plotting ========================================
     # boolean arguments are plotting options (what to add or not)
     # def plotPebbles(self,plotCir,plotPeb,plotPebCon,plotClus,plotOver,axval,running):
@@ -243,7 +248,17 @@ class Analysis:
 
         # Plotting clusters, using the external (global!) random_read color pattern
         if (plotClus):
-            self.cluster_colors = ['#'+''.join(random.sample('0123456789ABCDEF', 6)) for i in range(len(self.pebbles.cluster))]
+            #Order labels on size of cluster 
+            x = self.pebbles.cluster[self.pebbles.cluster != -1]
+            x = sorted(x, key=Counter(x).get, reverse=True)
+            labels = list(dict.fromkeys(x))
+            #Generate random colors
+            self.cluster_colors = ['#'+''.join(random.sample('0123456789ABCDEF', 6)) for i in range(np.max(labels).astype(int)+1)]
+            #Color largest three clusters, from large to small: blue, green, orange
+            self.cluster_colors[labels[0].astype(int)] = '#0072b2'
+            self.cluster_colors[labels[1].astype(int)] = '#009e73'
+            self.cluster_colors[labels[2].astype(int)] = '#d55e00'
+            
             for k in range(len(self.pebbles.Ifull)):
                 # this version depends on pebble numbering, so use 2nd version
                 x0, x1, y0, y1 = self.conf.getConPos2(
