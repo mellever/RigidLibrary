@@ -22,7 +22,7 @@ mu=0.3
 datatype = 'experiment_annulus'
 
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
-experiment_nums=['6']
+experiment_nums=['8']
 
 # Loop over experiment
 for experiment in experiment_nums:
@@ -119,10 +119,10 @@ for experiment in experiment_nums:
                 #    print (P_disp_if_pebble,P_pebble_if_disp)
                 #    # D2_min, needs assessment
                 #    fig7 = ThisAnalysis.DisplacementCorrelateD2min(True) 
+                """
                 
                 #Plotting the contact network
                 #fig3 = ThisAnalysis.contactnetwork()
-                
                 #Plotting Maxwell-Cremona tiling
                 #Colorscheme options filled = False: cluster, force, colorblind, random
                 #Colorscheme options filled = True: colorblind, random
@@ -132,18 +132,17 @@ for experiment in experiment_nums:
                 fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
                 fig6 = ThisAnalysis.tileplotter(colorscheme='random', filled=True)
                 
-                
                 #For saving high resolution images
                 fig1.set_size_inches(15,15)
-                fig1.savefig('/home/melle/Documents/Code/Plots/data0206/with_boundary/force/step'+str(u)+'.png', dpi=100)  
+                fig1.savefig('/home/melle/Documents/Code/Plots/data0606/with_boundary/force/step'+str(u)+'.pdf', dpi=100)  
                 
                 fig2.set_size_inches(15,15)
-                fig2.savefig('/home/melle/Documents/Code/Plots/data0206/with_boundary/pebble/step'+str(u)+'.png', dpi=100)  
+                fig2.savefig('/home/melle/Documents/Code/Plots/data0606/with_boundary/pebble/step'+str(u)+'.pdf', dpi=100)               
                 
                 fig5.set_size_inches(15,15)
-                fig5.savefig('/home/melle/Documents/Code/Plots/data0206/with_boundary/tiles_pebble/step'+str(u)+'.png', dpi=100)  
+                fig5.savefig('/home/melle/Documents/Code/Plots/data0606/with_boundary/tiles_pebble/step'+str(u)+'.pdf', dpi=100)  
                 
                 fig6.set_size_inches(15,15)
-                fig6.savefig('/home/melle/Documents/Code/Plots/data0206/with_boundary/tiles/step'+str(u)+'.png', dpi=100)                     
-                """
-                plt.show()
+                fig6.savefig('/home/melle/Documents/Code/Plots/data0606/with_boundary/tiles/step'+str(u)+'.pdf', dpi=100)                     
+                
+                #plt.show()
