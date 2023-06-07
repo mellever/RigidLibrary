@@ -126,7 +126,7 @@ for experiment in experiment_nums:
                 #Plotting Maxwell-Cremona tiling
                 #Colorscheme options filled = False: cluster, force, colorblind, random
                 #Colorscheme options filled = True: colorblind, random
-                
+                """
                 #fig4 = ThisAnalysis.tileplotter(colorscheme='force', filled=False)     
                 #Force color scheme does not make sense, for know we only determine the size of the force using the normal force. I think that the tangential force also needs to be used. 
                 fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
@@ -144,5 +144,7 @@ for experiment in experiment_nums:
                 
                 fig6.set_size_inches(15,15)
                 fig6.savefig('/home/melle/Documents/Code/Plots/data0706/with_boundary/tiles/step'+str(u)+'.png', dpi=100)                     
-                
+                """
+                ThisAnalysis.tiling_statistics()
+
                 #plt.show()

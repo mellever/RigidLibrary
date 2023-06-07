@@ -873,3 +873,33 @@ class Analysis:
         plt.axis('equal')
         return fig
 
+    def tiling_statistics(self):
+        err_sum = 0
+        for n in range(len(self.tiles)):
+            #Retrieve data
+            data = self.tiles[n]
+            vertices = data[1]
+  
+            #First and last vertex of a tile
+            vertex_start = vertices[0]
+            vertex_end = vertices[-1]
+            
+            #Coordintates of first and last vertex
+            vertex_start_x = vertex_start[1]
+            vertex_start_y = vertex_start[2]
+            vertex_end_x = vertex_end[1]
+            vertex_end_y = vertex_end[2]
+
+            #Compute force imbalance
+            errx = np.abs(vertex_start_x - vertex_end_x)
+            erry = np.abs(vertex_start_y - vertex_end_y)
+            err = np.sqrt(np.square(errx) + np.square(erry))
+
+            #Add to total
+            err_sum += err
+        
+        #Average over all tiles
+        err_mean = err_sum/len(self.tiles)
+        print("mean force imbalance = ", err_mean)
+
+                
