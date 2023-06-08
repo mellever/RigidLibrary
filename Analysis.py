@@ -165,8 +165,8 @@ class Analysis:
                         axval.text(x0+0.5*(x1-x0), y0+0.5*(y1-y0), str(k), fontsize=8)
 
         if (plotF):
-            # fscale=np.mean(self.fnor)
-            fscale = self.fgiven
+            #fscale = self.fgiven
+            fscale = 0.002
             Fcolor, Fmap = self.color_init(np.sqrt(np.amax(self.ftot))/fscale)
             for k in range(len(self.conf.I)):
                 fval = np.sqrt(self.ftot[k]/fscale)
@@ -255,9 +255,9 @@ class Analysis:
             #Generate random colors
             self.cluster_colors = ['#'+''.join(random.sample('0123456789ABCDEF', 6)) for i in range(np.max(labels).astype(int)+1)]
             #Color largest three clusters, from large to small: blue, green, orange
-            self.cluster_colors[labels[0].astype(int)] = '#0072b2'
-            self.cluster_colors[labels[1].astype(int)] = '#009e73'
-            self.cluster_colors[labels[2].astype(int)] = '#d55e00'
+            if len(labels) >= 1: self.cluster_colors[labels[0].astype(int)] = '#0072b2'
+            if len(labels) >= 2: self.cluster_colors[labels[1].astype(int)] = '#009e73'
+            if len(labels) >= 3: self.cluster_colors[labels[2].astype(int)] = '#d55e00'
             
             for k in range(len(self.pebbles.Ifull)):
                 # this version depends on pebble numbering, so use 2nd version
@@ -874,7 +874,9 @@ class Analysis:
         return fig
 
     def tiling_statistics(self):
-        err_sum = 0
+        err = []
+        f = []
+        fvertices = []
         for n in range(len(self.tiles)):
             #Retrieve data
             data = self.tiles[n]
@@ -893,13 +895,36 @@ class Analysis:
             #Compute force imbalance
             errx = np.abs(vertex_start_x - vertex_end_x)
             erry = np.abs(vertex_start_y - vertex_end_y)
-            err = np.sqrt(np.square(errx) + np.square(erry))
-
-            #Add to total
-            err_sum += err
-        
+            err.append(np.sqrt(np.square(errx) + np.square(erry)))
+            
+            fver = 0
+            
+            #Loop over all vertices of a tile
+            for k in range(len(vertices)-1):
+                #Extract vertices
+                vertex1 = vertices[k]
+                vertex2 = vertices[k+1]
+                fx = vertex1[1] - vertex2[1]
+                fy = vertex1[2] - vertex2[2]
+                #Compute sum of all magnitudes of forces
+                fmag = np.sqrt(np.square(fx) + np.square(fy))
+                f.append(fmag)
+                fver += fmag
+            
+            fvertices.append(fver)
+                
         #Average over all tiles
-        err_mean = err_sum/len(self.tiles)
-        print("mean force imbalance = ", err_mean)
+        err_mean = np.mean(err)
+        #Average over all contacts
+        f_mean = np.mean(f)
+        #Compute off-force-balance ratio
+        err_force_ratio = err_mean/f_mean
+        
+        plt.scatter(err, fvertices)
+        plt.show()
+        
+        print("mean force mnbalance = ", err_mean)
+        print("mean force magnitude = ", f_mean)
+        print("mean off-force balance ratio = ", err_force_ratio)
 
                 

@@ -156,7 +156,8 @@ class Tiling:
             # Stating values
             xor1 = yor1 = l = 0 #Staring position x, starting position y, counter for amount of tiles
             checklist = np.unique(np.union1d(self.I, self.J)) #Checklist for checking if all contacts are plotted
-            s = checklist[0] #Starting vertex
+            s = checklist[-1] #Starting vertex
+            print(s)
             contact = np.max(checklist)+1  #Start with an element that is for sure not in the checklist
             
             # For plotting

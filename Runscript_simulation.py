@@ -22,21 +22,12 @@ import Tiling as TY
 
 # ========================= Sample execution script. Will be removed in bulk version. ===========
 
-test = False
-
-if test:
-    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/test_shift/'
-    form = 'simulation_test'
-    start = 0
-    stop = 1
-    step = 1
-else: 
-    foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
-    #foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_phi0802_mu10_xi0.1/'
-    form = 'simulation'
-    start = 1999 #410 is partially rigid for the large system
-    stop = 2000
-    step = stop-start
+#foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
+foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1/'
+form = 'simulation'
+start = 420 #410 is partially rigid for the large system
+stop = 2000
+step = stop-start
 
 outfolder = foldername
 
@@ -105,11 +96,22 @@ for k in range(start, stop, step):
     #Colorscheme options filled = False: cluster, force, colorblind, random
     #Colorscheme options filled = True: colorblind, random
     
-    #fig4 = ThisAnalysis.tileplotter(colorscheme='force', filled=False)     
-    #Force color scheme does not make sense, for know we only determine the size of the force using the normal force. I think that the tangential force also needs to be used. 
     #fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
-    fig6 = ThisAnalysis.tileplotter(colorscheme='random', filled=True)
-
+    #fig6 = ThisAnalysis.tileplotter(colorscheme='random', filled=True)
     
-
-plt.show()
+    ThisAnalysis.tiling_statistics()
+    """
+    fig1.set_size_inches(15,15)
+    fig1.savefig('data_1024_rigid.pdf', dpi=100)
+    
+    fig2.set_size_inches(15,15)
+    fig2.savefig('pebble_1024_floppy.pdf', dpi=100)
+    
+    fig5.set_size_inches(15,15)
+    fig5.savefig('tiles_1024_rigid.pdf', dpi=100)
+    
+    fig6.set_size_inches(15,15)
+    fig6.savefig('tiles_1024_rigid_alt.pdf', dpi=100)
+    """
+    
+    #plt.show()

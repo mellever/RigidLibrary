@@ -16,7 +16,7 @@ import pickle
 topdir='/home/melle/Documents/Code/RigidLibrary/DataAnnulus/'
 
 # experimental friction coefficient
-mu=0.3
+mu=5
 
 # Experiment type, for other types please use a different runscript.
 datatype = 'experiment_annulus'
@@ -50,6 +50,7 @@ for experiment in experiment_nums:
                 #Adding boundary contacts, passsing threshold argument is possible
                 ThisConf.AddBoundaryContactsAnnulus()
                 
+
                 #Setting up and playing the pebble game
                 ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
                 
@@ -57,7 +58,6 @@ for experiment in experiment_nums:
                 ThisPebble.play_game()
                 # compute rigid clusters
                 cidx, clusterall, clusterallBonds, clusteridx, BigCluster=ThisPebble.rigid_cluster()
-                
 
                 ########### Setting up the dynamical matrix and getting eigenmodes
                 # This itself does very little, just creates an empty Hessian class
@@ -72,6 +72,7 @@ for experiment in experiment_nums:
                 ########## Have a look at some analysis functions of the rigid clusters
                 #def __init__(self,conf0,pebbles0,hessian0,verbose=False):
                 ThisAnalysis=AN.Analysis(ThisConf,ThisPebble,ThisHessian,ThisTiling,0.01,False)
+
                 # stress statistics
                 #zav,nm,pres,fxbal,fybal,torbal,mobin,mohist,sxx,syy,sxy,syx=ThisAnalysis.getStressStat()
                 # cluster statistics
@@ -126,12 +127,13 @@ for experiment in experiment_nums:
                 #Plotting Maxwell-Cremona tiling
                 #Colorscheme options filled = False: cluster, force, colorblind, random
                 #Colorscheme options filled = True: colorblind, random
-                """
+
                 #fig4 = ThisAnalysis.tileplotter(colorscheme='force', filled=False)     
                 #Force color scheme does not make sense, for know we only determine the size of the force using the normal force. I think that the tangential force also needs to be used. 
                 fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
                 fig6 = ThisAnalysis.tileplotter(colorscheme='random', filled=True)
                 
+                """
                 #For saving high resolution images
                 fig1.set_size_inches(15,15)
                 fig1.savefig('/home/melle/Documents/Code/Plots/data0706/with_boundary/force/step'+str(u)+'.png', dpi=100)  
@@ -143,8 +145,9 @@ for experiment in experiment_nums:
                 fig5.savefig('/home/melle/Documents/Code/Plots/data0706/with_boundary/tiles_pebble/step'+str(u)+'.png', dpi=100)  
                 
                 fig6.set_size_inches(15,15)
-                fig6.savefig('/home/melle/Documents/Code/Plots/data0706/with_boundary/tiles/step'+str(u)+'.png', dpi=100)                     
-                """
-                ThisAnalysis.tiling_statistics()
+                fig6.savefig('/home/melle/Documents/Code/Plots/data0706/with_boundary/tiles/step'+str(u)+'.png', dpi=100)       
+                """              
 
-                #plt.show()
+                #ThisAnalysis.tiling_statistics()
+
+                plt.show()

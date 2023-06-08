@@ -104,28 +104,7 @@ class Configuration:
                 # boundary width
                 self.width = 20e-3
                 self.experiment = True
-            elif (datatype == 'test'):
-                # Use this for analysing artificial packings
-                #Strainstep of the experiment
-                self.step = strainstep
-                #Set friction coefficient
-                self.mu = mu0
-                # Experimental data does not have periodic boundary conditions and there is no angle data either
-                self.periodic = False
-                self.hasAngles = False
-                # density of the material in kg/m^3
-                self.density = 1060.0
-                # Prefactor of the stiffness coefficient, k_n = \frac{\pi}{6} E h = 6490 kg /s^2
-                self.stiffness = 6490.0
-                # radius conversion factor from pixel to m.
-                self.rconversion = 2.7e-4
-                # height of the disks in m
-                self.height = 3.1e-3
-                # boundary width
-                self.width = 20e-3
-                self.experiment = True
-            else:
-                print("Error: Unknown type of data! Doing nothing.")
+            else: print("Error: Unknown type of data! Doing nothing.")
 
         #======= Simulation parameter read-in =====================
         # use Parameter read-in as function called by the constructor
@@ -166,8 +145,7 @@ class Configuration:
         def readSimdata(self, snap, verbose0, distSnapshot0=1000):
                 self.verbose = verbose0
                 self.distSnapshot = distSnapshot0
-                if not self.test:
-                    self.strain = self.gammadot*(1.0*snap)*self.distSnapshot
+                self.strain = self.gammadot*(1.0*snap)*self.distSnapshot
 
                 if (self.verbose):
                         print('L=' + str(self.L))
