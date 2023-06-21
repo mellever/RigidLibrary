@@ -76,20 +76,7 @@ class Pebbles:
                 self.Ifull[conf.ncon+jj]=conf.I[k]
                 self.Jfull[conf.ncon+jj]=conf.J[k]
                 jj+=1
-        print("Sizes of full contact objects:" + str(len(self.Ifull)))
-        
-    
-    # Here go further methods to either add bonds, remove bonds or modify the connectivity
-    
-    def AddBoundary(self):
-            return 0
-            
-    def AddSecondNeighbour(self):
-            return 0
-    
-    def AddRandombonds(self):
-        return 0
-         
+        print("Sizes of full contact objects:" + str(len(self.Ifull)))        
                 
     ### ================================ The pebble game ==============================================
     def play_game(self):

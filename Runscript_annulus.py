@@ -11,9 +11,10 @@ import Tiling as TY
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
+import pandas as pd
 
 #topdir='/directory/where/experimental/data/is/located/'
-topdir='/home/melle/Documents/Code/RigidLibrary/DataAnnulus/'
+topdir='/DataAnnulus/'
 
 # experimental friction coefficient
 mu=5
@@ -22,7 +23,7 @@ mu=5
 datatype = 'experiment_annulus'
 
 #Change this if multiple experiments were used and use this to locate the correct data per experiment
-experiment_nums=['9']
+experiment_nums=['10']
 
 # Loop over experiment
 for experiment in experiment_nums:
@@ -36,8 +37,6 @@ for experiment in experiment_nums:
             #if no data is found for an experiment number go to the next experiment
             continue
         
-        
-        #nsteps=1
         # Loop over strain steps for a given experiment
         # Start at 1 since steps start at 1. Ends at nsteps.
         for u in range(1, nsteps+1):
@@ -49,7 +48,6 @@ for experiment in experiment_nums:
                 
                 #Adding boundary contacts, passsing threshold argument is possible
                 ThisConf.AddBoundaryContactsAnnulus()
-                
 
                 #Setting up and playing the pebble game
                 ThisPebble = PB.Pebbles(ThisConf,3,3,'nothing',False)
@@ -67,14 +65,17 @@ for experiment in experiment_nums:
                 ThisTiling = TY.Tiling(ThisConf)
     
                 #Make the Maxwell-Cremona tiling
-                ThisTiling.tile()
+                ThisTiling.tile(start=20, verbose=False)
                 
                 ########## Have a look at some analysis functions of the rigid clusters
                 #def __init__(self,conf0,pebbles0,hessian0,verbose=False):
                 ThisAnalysis=AN.Analysis(ThisConf,ThisPebble,ThisHessian,ThisTiling,0.01,False)
-
+                
+                #Tiling statistics
+                err, fvertices, err_mean, f_mean, err_force_ratio = ThisAnalysis.tiling_statistics()
+                
                 # stress statistics
-                #zav,nm,pres,fxbal,fybal,torbal,mobin,mohist,sxx,syy,sxy,syx=ThisAnalysis.getStressStat()
+                zav,nm,pres,fxbal,fybal,torbal,mobin,mohist,sxx,syy,sxy,syx=ThisAnalysis.getStressStat()
                 # cluster statistics
                 frac,fracmax,lenx,leny=ThisAnalysis.clusterStatistics()
                 #def plotStresses(self,plotCir,plotVel,plotCon,plotF,plotStress,**kwargs):
@@ -132,22 +133,5 @@ for experiment in experiment_nums:
                 #Force color scheme does not make sense, for know we only determine the size of the force using the normal force. I think that the tangential force also needs to be used. 
                 fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
                 fig6 = ThisAnalysis.tileplotter(colorscheme='random', filled=True)
-                
-                """
-                #For saving high resolution images
-                fig1.set_size_inches(15,15)
-                fig1.savefig('/home/melle/Documents/Code/Plots/data0706/with_boundary/force/step'+str(u)+'.png', dpi=100)  
-                
-                fig2.set_size_inches(15,15)
-                fig2.savefig('/home/melle/Documents/Code/Plots/data0706/with_boundary/pebble/step'+str(u)+'.png', dpi=100)               
-                
-                fig5.set_size_inches(15,15)
-                fig5.savefig('/home/melle/Documents/Code/Plots/data0706/with_boundary/tiles_pebble/step'+str(u)+'.png', dpi=100)  
-                
-                fig6.set_size_inches(15,15)
-                fig6.savefig('/home/melle/Documents/Code/Plots/data0706/with_boundary/tiles/step'+str(u)+'.png', dpi=100)       
-                """              
-
-                #ThisAnalysis.tiling_statistics()
 
                 plt.show()

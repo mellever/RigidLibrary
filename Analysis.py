@@ -138,7 +138,8 @@ class Analysis:
                 # angline=lne.Line2D([self.x[k],self.x[k]+self.rad[k]*np.cos(self.alpha[k])],[self.y[k],self.y[k]+self.rad[k]*np.sin(self.alpha[k])],color=(0.5, 0.5, 0.5))
                 # plt.gca().add_line(angline)
                 if self.verbose:
-                    axval.text(self.conf.x[k], self.conf.y[k], str(k), fontsize=8)
+                    if k in [0, 1023]:
+                        axval.text(self.conf.x[k], self.conf.y[k], str(k), fontsize=8)
             # Velocity vectors
             if (plotVel):
                 scale = 2*np.mean(self.conf.rad)/np.sqrt(np.mean(self.conf.dx *
@@ -166,7 +167,7 @@ class Analysis:
 
         if (plotF):
             #fscale = self.fgiven
-            fscale = 0.002
+            fscale = 0.005
             Fcolor, Fmap = self.color_init(np.sqrt(np.amax(self.ftot))/fscale)
             for k in range(len(self.conf.I)):
                 fval = np.sqrt(self.ftot[k]/fscale)
@@ -873,6 +874,7 @@ class Analysis:
         plt.axis('equal')
         return fig
 
+    #Function that return some statistics of the tiling
     def tiling_statistics(self):
         err = []
         f = []
@@ -897,6 +899,7 @@ class Analysis:
             erry = np.abs(vertex_start_y - vertex_end_y)
             err.append(np.sqrt(np.square(errx) + np.square(erry)))
             
+            #Set force on a vertex equal to zero
             fver = 0
             
             #Loop over all vertices of a tile
@@ -918,13 +921,12 @@ class Analysis:
         #Average over all contacts
         f_mean = np.mean(f)
         #Compute off-force-balance ratio
-        err_force_ratio = err_mean/f_mean
+        err_force_ratio = err_mean/f_mean       
         
-        plt.scatter(err, fvertices)
-        plt.show()
-        
-        print("mean force mnbalance = ", err_mean)
+        #Print and return
+        print("mean force imbalance = ", err_mean)
         print("mean force magnitude = ", f_mean)
         print("mean off-force balance ratio = ", err_force_ratio)
+        return err, fvertices, err_mean, f_mean, err_force_ratio
 
                 

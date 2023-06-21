@@ -23,7 +23,7 @@ class Tiling:
         self.ny = conf.ny
         
     # ================= Maxwell-Cremona Tiling ======================= 
-    # Function that plots tile and returns plotted points
+    # Function that saves and returns plotted points
     def vertices(self, data, xor, yor, i):
         # Create array for saving the data
         orr = np.zeros((len(data[:,0]),3))
@@ -47,7 +47,7 @@ class Tiling:
             #Add to list
             coords.append([data[k,0], xor,yor])
             
-        #Add to list for plotting
+        #Save and return vertices
         self.tiles.append([i, coords])
         return orr
     
@@ -78,7 +78,7 @@ class Tiling:
                 ny = -ny
             
             # Compute angle between particles
-            theta = np.arctan2(ny, nx) #%(2*np.pi)
+            theta = np.arctan2(ny, nx)
             if theta < 0: 
                 theta+=2*np.pi
             
@@ -122,7 +122,7 @@ class Tiling:
             self.adj_list[i] = con
         
     # Function that performs breadth first search, such that all contacts get plotted
-    # This has been taken from https://towardsdatascience.com/introduction-to-graph-algorithm-breadth-first-search-algorithm-in-python-8644b6d31880
+    # This has been inspired from https://towardsdatascience.com/introduction-to-graph-algorithm-breadth-first-search-algorithm-in-python-8644b6d31880
     def BFS(self, s):
         visited = {}
         level = {}
@@ -149,19 +149,15 @@ class Tiling:
     
     
     # Function for maxwell cremona tiling
-    def tile(self):
+    def tile(self, start, verbose):
         if isinstance(self.I, int):
             print('no data')
         else:
             # Stating values
             xor1 = yor1 = l = 0 #Staring position x, starting position y, counter for amount of tiles
             checklist = np.unique(np.union1d(self.I, self.J)) #Checklist for checking if all contacts are plotted
-            s = checklist[-1] #Starting vertex
-            print(s)
+            print("starting position = ", start)
             contact = np.max(checklist)+1  #Start with an element that is for sure not in the checklist
-            
-            # For plotting
-            plt.figure() 
             
             # Create lists to store data from which origin and angle can be recovered
             orr = []
@@ -170,7 +166,9 @@ class Tiling:
             self.adjacency_list(checklist)
             
             # Perform breadth first search and return list of what particles to root over and what contacts these particles have
-            particles, parent = self.BFS(s)
+            particles, parent = self.BFS(start)
+            
+            if verbose: print("particle list = ", particles)
             
             #Create empty list to store all the data
             self.tiles = []
@@ -204,6 +202,8 @@ class Tiling:
                 # Get contact data and force data for contact i
                 arg1, con1, data1 = self.contact(i, i=contact)
                 
+                if verbose: print("contacts of particle "+str(i)+" are ", con1)
+                
                 # Plot and get force vector data
                 orr1 = self.vertices(data1, xor1, yor1, i)
                 
@@ -218,14 +218,15 @@ class Tiling:
                     # Get contact data
                     arg2, con2, data2 = self.contact(con1[k], i=i)
                     
+                    if verbose: print("contacts of particle "+str(con1[k])+" are ", con2)
+                    
                     # Get origin coordinates
                     x = np.argwhere(orr1[:,0]==con1[k]).flatten()[0]
                     n = (x+1)%len(con1)
                     xor2 = orr1[n,1]
                     yor2 = orr1[n,2]
                     
-                    # Plot the result and get origin coordinates
-                    # orr1 = self.vertices(data1, xor1, yor1)
+                    # Get vertex coordinates
                     orr2 = self.vertices(data2, xor2, yor2, con1[k])
                     
                     # Save data

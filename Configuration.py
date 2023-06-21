@@ -43,20 +43,6 @@ class Configuration:
                 self.height = 1.0
                 self.width = 1.0
                 self.test = False
-            elif (datatype == 'simulation_test'):
-                print("Reading simulation data!")
-                # Simulation data has periodic boundary conditions and also angles as output
-                self.periodic = True
-                self.hasAngles = True
-                # basis for mass computations
-                self.density = 1.0
-                # Prefactor of the stiffness coefficients
-                self.stiffness = 1.0
-                # radius conversion factor
-                self.rconversion = 1.0
-                self.height = 1.0
-                self.width = 1.0
-                self.test = True
             elif (datatype == 'experiment_square'):
                 self.step = strainstep
                 self.mu = mu0
@@ -238,6 +224,7 @@ class Configuration:
                     self.rad=coords[:,4]
                     self.boundary=coords[:,5]
                     self.N=len(self.rad)
+                    print("Experiment with " +str(self.N)+ " particles")
                     self.Lx=np.amax(self.x)-np.amin(self.x)
                     self.Ly=np.amax(self.y)-np.amin(self.y)
                     del coords
@@ -263,10 +250,6 @@ class Configuration:
                 self.I=[]
                 self.J=[]
                 
-                #Lists with particle indices, ommit for now.
-                #self.argI=[]
-                #self.argJ=[]
-                
                 #Lists with forces
                 fn0=[]
                 ft0=[]
@@ -282,18 +265,8 @@ class Configuration:
                         j = condata[:,2][k].astype(int)
                         argi = np.argwhere(self.id == i).flatten()[0]
                         argj = np.argwhere(self.id == j).flatten()[0]
-                        
-                        
-                        #For now we identify particle id's with indices in the list. Not ideal for debugging, but it works.
-                        #Can be fixed if necessary, see commented code below for a start.
-                        """
-                        #self.I.append(i)
-                        #self.J.append(j)
-                        self.argI.append(argi)
-                        self.argJ.append(argj)
-                        """
-                        
-                        
+                                           
+                        #For now we identify particle id's with indices in the list. Not ideal for debugging, but it works.                   
                         self.I.append(argi)
                         self.J.append(argj)
                         
@@ -635,7 +608,7 @@ class Configuration:
                     fnor0=ftotx*nx0+ftoty*ny0
                     ftan0=ftotx*(-ny0)+ftoty*nx0
 
-                else: fnor0 = ftan0 = nx0 = ny0 = 0 #Should this be zero?
+                else: fnor0 = ftan0 = nx0 = ny0 = 0 #if no neighbours, forces are zero
                 
                 #Add data to list
                 fnor_add.append(fnor0)

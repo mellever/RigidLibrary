@@ -22,12 +22,11 @@ import Tiling as TY
 
 # ========================= Sample execution script. Will be removed in bulk version. ===========
 
-#foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1_N64_mu10_phi804/'
 foldername = '/home/melle/Documents/Code/RigidLibrary/DataSimulation/conf1/'
 form = 'simulation'
-start = 420 #410 is partially rigid for the large system
-stop = 2000
-step = stop-start
+start = 400
+stop = 450
+step = 1
 
 outfolder = foldername
 
@@ -54,6 +53,9 @@ clusterall2 = [[] for _ in range(int((stop-start)/step+1))]
 #Create config
 ThisConf = CF.Configuration(foldername, form, mu, step)
 
+err_list = []
+fvertices_list = []
+
 for k in range(start, stop, step):
     #Read sim data
     ThisConf.readSimdata(k, False)
@@ -65,7 +67,6 @@ for k in range(start, stop, step):
     ThisPebble.play_game()
     # compute rigid clusters
     cidx, clusterall, clusterallBonds, clusteridx, BigCluster=ThisPebble.rigid_cluster()
-    
 
     ########### Setting up the dynamical matrix and getting eigenmodes
     # This itself does very little, just creates an empty Hessian class
@@ -74,20 +75,29 @@ for k in range(start, stop, step):
     ThisTiling = TY.Tiling(ThisConf)
     
     #Make the Maxwell-Cremona tiling
-    ThisTiling.tile()
+    ThisTiling.tile(start = 0, verbose=False)
     
     ########## Have a look at some analysis functions of the rigid clusters
     #def __init__(self,conf0,pebbles0,hessian0,verbose=False):
     ThisAnalysis=AN.Analysis(ThisConf,ThisPebble,ThisHessian,ThisTiling,0.01,False)
+    
+    #Tiling statistics
+    err, fvertices, err_mean, f_mean, err_force_ratio = ThisAnalysis.tiling_statistics()
+    
+    #Add to list
+    fvertices_list.append(fvertices)
+    err_list.append(err)
+    
     # stress statistics
     zav,nm,pres,fxbal,fybal,torbal,mobin,mohist,sxx,syy,sxy,syx=ThisAnalysis.getStressStat()
     # cluster statistics
     frac,fracmax,lenx,leny=ThisAnalysis.clusterStatistics()
-    #def plotStresses(self,plotCir,plotVel,plotCon,plotF,plotStress,**kwargs):
-    #fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
+    #def plotStresses(self,plotCir,plotVel,plotCon,plotF,plotStress,**kwargs):   
+    fig1 = ThisAnalysis.plotStresses(True,False,False,True,False)
     #def plotPebbles(self,plotCir,plotPeb,plotPebCon,plotClus,plotOver,**kwargs):
+    
     #ThisAnalysis.plotPebbles(True,True,True,False,False)
-    #fig2 = ThisAnalysis.plotPebbles(True,False,False,True,False)
+    fig2 = ThisAnalysis.plotPebbles(True,True,False,True,False)
     
     #Plotting the contact network
     #fig3 = ThisAnalysis.contactnetwork()
@@ -96,22 +106,6 @@ for k in range(start, stop, step):
     #Colorscheme options filled = False: cluster, force, colorblind, random
     #Colorscheme options filled = True: colorblind, random
     
-    #fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
-    #fig6 = ThisAnalysis.tileplotter(colorscheme='random', filled=True)
-    
-    ThisAnalysis.tiling_statistics()
-    """
-    fig1.set_size_inches(15,15)
-    fig1.savefig('data_1024_rigid.pdf', dpi=100)
-    
-    fig2.set_size_inches(15,15)
-    fig2.savefig('pebble_1024_floppy.pdf', dpi=100)
-    
-    fig5.set_size_inches(15,15)
-    fig5.savefig('tiles_1024_rigid.pdf', dpi=100)
-    
-    fig6.set_size_inches(15,15)
-    fig6.savefig('tiles_1024_rigid_alt.pdf', dpi=100)
-    """
-    
-    #plt.show()
+    fig5 = ThisAnalysis.tileplotter(colorscheme='cluster', filled=False)
+    fig6 = ThisAnalysis.tileplotter(colorscheme='random', filled=True)
+    plt.show()

@@ -11,8 +11,7 @@ import Tiling as TY
 import matplotlib.pyplot as plt
 
 # Location of data to analyse
-#topdir='/directory/where/experimental/data/is/located/'
-topdir='/home/melle/Documents/Code/RigidLibrary/DataSquare/'
+topdir='/DataSquare/'
 # experimental friction coefficient
 mu=0.3
 # More information about data set
